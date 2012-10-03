@@ -25,7 +25,7 @@ AC_PROG_LIBTOOL
 # CHECK_LIBS accordingly.  
 #  AM_PATH_CHECK([MINIMUM-VERSION,
 #                [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
-#AM_PATH_CHECK()
+AM_PATH_CHECK()
 
 # Checks for header files.
 AC_HEADER_STDC
