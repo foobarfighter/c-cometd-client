@@ -7,12 +7,15 @@
 #include <stdlib.h>
 #include <check.h>
 #include "../src/cometd.h"
+#include "../tests/test_helper.h"
+
+#define TEST_SERVER_URL "http://localhost:8089/cometd/"
 
 cometd_config* config = NULL;
 
 void setup (void)
 {
-  config = NULL;
+  config = (cometd_config*) malloc(sizeof(cometd_config));
 }
 
 void teardown (void)
@@ -21,11 +24,10 @@ void teardown (void)
     free(config);
 }
 
-START_TEST (test_cometd_init)
+START_TEST (test_cometd_configure)
 {
-  config = (cometd_config*) malloc(sizeof(cometd_config));
 
-  cometd_set_default_config(config);
+  cometd_default_config(config);
 
   char* actual_url = "http://example.com/cometd/";
 
@@ -38,14 +40,27 @@ START_TEST (test_cometd_init)
 }
 END_TEST
 
-Suite *
-cometd_suite (void)
+START_TEST (test_cometd_init)
+{
+  cometd_default_config(config);
+  config->url = TEST_SERVER_URL;
+  cometd_configure(config);
+
+  cometd* h = cometd_init();
+
+  await(h->conn->state == COMETD_CONNECTED);
+}
+END_TEST
+
+
+Suite* cometd_suite (void)
 {
   Suite *s = suite_create ("Cometd");
 
   /* Core test case */
   TCase *tc_core = tcase_create ("Client");
   tcase_add_checked_fixture (tc_core, setup, teardown);
+  tcase_add_test (tc_core, test_cometd_configure);
   tcase_add_test (tc_core, test_cometd_init);
   suite_add_tcase (s, tc_core);
 

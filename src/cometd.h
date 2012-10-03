@@ -3,11 +3,16 @@
 
 #define NULL                          0
 
+// Defaults
 #define DEFAULT_BACKOFF_INCREMENT     1000
 #define DEFAULT_MAX_BACKOFF           1000
 #define DEFAULT_MAX_NETWORK_DELAY     1000
 #define DEFAULT_APPEND_MESSAGE_TYPE   1
 
+// Connection state
+#define COMETD_CONNECTED              0x00000001
+
+// connection configuration object
 typedef struct {
   char* url;
   int   backoff_increment;
@@ -16,9 +21,22 @@ typedef struct {
   int   append_message_type_to_url;
 } cometd_config;
 
+// connection state object
+typedef struct {
+  int state;
+} cometd_conn;
 
-void            cometd_set_default_config (cometd_config* config);
-cometd_config*  cometd_configure          (const cometd_config *config);
+// cometd handle
+typedef struct {
+  const cometd_conn* conn;
+  const cometd_config* config;
+} cometd;
+
+
+void            cometd_default_config   (cometd_config* config);
+cometd_config*  cometd_configure        (const cometd_config *config);
+cometd*         cometd_init             ();
+cometd*         cometd_destroy          (cometd* h);
 
 
 #endif /* COMETD_H */
