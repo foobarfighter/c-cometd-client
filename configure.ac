@@ -2,10 +2,10 @@
 # Process this file with autoconf to produce a configure script.
 
 #AC_PREREQ(2.60)
-AC_INIT(helloworld, 0.1, foo@bar.com)
-AC_CONFIG_SRCDIR([hello.c])
+AC_INIT(libcometd, 0.1, bob.remeika@gmail.com)
+AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADER([config.h])
-AM_INIT_AUTOMAKE(helloworld, main)
+AM_INIT_AUTOMAKE(libcometd, cometd_init)
 
 # Checks for programs.
 AC_PROG_CC
