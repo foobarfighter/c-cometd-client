@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-lib_LTLIBRARIES = libmoney.la
+lib_LTLIBRARIES = libcometd.la
 libcometd_la_SOURCES = cometd.c cometd.h
 
 bin_PROGRAMS = main
