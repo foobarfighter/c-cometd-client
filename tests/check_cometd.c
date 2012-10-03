@@ -8,25 +8,40 @@
 #include <check.h>
 #include "../src/cometd.h"
 
-void
-setup (void)
+cometd_config* config = NULL;
+
+void setup (void)
 {
+  config = NULL;
 }
 
-void
-teardown (void)
+void teardown (void)
 {
+  if (config != NULL)
+    free(config);
 }
 
 START_TEST (test_cometd_init)
 {
+  config = (cometd_config*) malloc(sizeof(cometd_config));
+
+  cometd_set_default_config(config);
+
+  char* actual_url = "http://example.com/cometd/";
+
+  config->url = actual_url;
+  cometd_configure(config);
+
+  cometd_config *actual = cometd_configure(NULL);
+  fail_unless(strncmp(actual->url, actual_url, sizeof(actual_url)) == 0);
+  fail_unless(actual->backoff_increment == DEFAULT_BACKOFF_INCREMENT);
 }
 END_TEST
 
 Suite *
 cometd_suite (void)
 {
-  Suite *s = suite_create("Cometd");
+  Suite *s = suite_create ("Cometd");
 
   /* Core test case */
   TCase *tc_core = tcase_create ("Client");
