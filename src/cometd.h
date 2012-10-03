@@ -34,9 +34,9 @@ typedef struct {
 
 
 void            cometd_default_config   (cometd_config* config);
-cometd_config*  cometd_configure        (const cometd_config *config);
+cometd_config*  cometd_configure        (cometd_config *config);
 cometd*         cometd_init             ();
-cometd*         cometd_destroy          (cometd* h);
+void            cometd_destroy          (cometd* h);
 
 
 #endif /* COMETD_H */

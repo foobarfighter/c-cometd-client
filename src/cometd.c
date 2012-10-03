@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "cometd.h"
 
 cometd_config *_cometd_config = NULL;
@@ -10,7 +11,7 @@ void cometd_default_config(cometd_config* config){
   config->append_message_type_to_url = DEFAULT_APPEND_MESSAGE_TYPE;
 }
 
-cometd_config* cometd_configure(const cometd_config *config){
+cometd_config* cometd_configure(cometd_config *config){
   if (config != NULL){
     _cometd_config = config;
   }
