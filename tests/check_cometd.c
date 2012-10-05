@@ -6,6 +6,7 @@
 #define TEST_SERVER_URL "http://localhost:8089/cometd/"
 
 cometd_config* config = NULL;
+cometd* instance = NULL;
 
 void setup (void)
 {
@@ -16,6 +17,15 @@ void teardown (void)
 {
   if (config != NULL)
     free(config);
+  if (instance != NULL)
+    free(instance);
+}
+
+cometd* create_cometd(){
+  cometd_default_config(config);
+  config->url = TEST_SERVER_URL;
+  cometd_configure(config);
+  cometd* h = cometd_new(EV_DEFAULT);
 }
 
 START_TEST (test_cometd_configure)
@@ -34,29 +44,49 @@ START_TEST (test_cometd_configure)
 }
 END_TEST
 
-START_TEST (test_cometd_init)
+START_TEST (test_cometd_new)
 {
   cometd_default_config(config);
   config->url = TEST_SERVER_URL;
   cometd_configure(config);
 
-  cometd* h = cometd_init();
+  struct ev_loop* loop = EV_DEFAULT;
 
-  await(h->conn->state == COMETD_CONNECTED);
+  cometd* h = cometd_new(loop);
+  // FIXME: This tests passes even if loop isn't assigned
+  fail_unless(h->loop == loop);
+  fail_unless(h->conn->state == COMETD_DISCONNECTED);
+  //fail_unless(h->config == config);
+  cometd_destroy(h);
 }
 END_TEST
 
+START_TEST (test_cometd_successful_init){
+  instance = create_cometd();
+  cometd_init(instance);
+
+  while (true){
+    if (instance->conn->state != COMETD_CONNECTED)
+      sleep(1);
+  }
+}
+END_TEST
 
 Suite* cometd_suite (void)
 {
   Suite *s = suite_create ("Cometd");
 
   /* Core test case */
-  TCase *tc_core = tcase_create ("Client");
-  tcase_add_checked_fixture (tc_core, setup, teardown);
-  tcase_add_test (tc_core, test_cometd_configure);
-  tcase_add_test (tc_core, test_cometd_init);
-  suite_add_tcase (s, tc_core);
+  TCase *tc_unit = tcase_create ("Client::Unit");
+  tcase_add_checked_fixture (tc_unit, setup, teardown);
+  tcase_add_test (tc_unit, test_cometd_configure);
+  tcase_add_test (tc_unit, test_cometd_new);
+  suite_add_tcase (s, tc_unit);
+
+  TCase *tc_integration = tcase_create ("Client::Integration");
+  tcase_add_checked_fixture (tc_integration, setup, teardown);
+  tcase_add_test (tc_integration, test_cometd_successful_init);
+  suite_add_tcase (s, tc_integration);
 
   /* Limits test case */
   //TCase *tc_limits = tcase_create ("Limits");

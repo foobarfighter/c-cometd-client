@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <pthread.h>
 #include "cometd.h"
 #include "../deps/libev-4.11/ev.h"
 
@@ -23,19 +24,27 @@ cometd_configure(cometd_config *config){
 }
 
 cometd*
-cometd_init(struct ev_loop *loop){
+cometd_new(struct ev_loop *loop){
   cometd* h = malloc(sizeof(cometd));
-  cometd_conn* conn = malloc(sizeof(cometd_conn));
+  h->loop = loop;
 
+  cometd_conn* conn = malloc(sizeof(cometd_conn));
   conn->state = COMETD_DISCONNECTED;
 
   h->conn = conn;
   return h;
 }
 
-int
-cometd_run(const cometd* handle){
+void*
+_cometd_init(void* thread_id){
 }
+
+int
+cometd_init(const cometd* h){
+  pthread_t thread;
+  return pthread_create(&thread, NULL, _cometd_init, NULL);
+}
+
 
 void cometd_destroy(cometd* h){
   free(h->conn);

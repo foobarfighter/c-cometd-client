@@ -1,6 +1,8 @@
 #ifndef COMETD_H
 #define COMETD_H
 
+#include "../deps/libev-4.11/ev.h"
+
 #define NULL                          0
 
 // Defaults
@@ -29,14 +31,15 @@ typedef struct {
 
 // cometd handle
 typedef struct {
-  const cometd_conn* conn;
-  const cometd_config* config;
+  cometd_conn* conn;
+  cometd_config* config;
+  struct ev_loop* loop;
 } cometd;
 
 
 void            cometd_default_config   (cometd_config* config);
 cometd_config*  cometd_configure        (cometd_config *config);
-cometd*         cometd_init             ();
+cometd*         cometd_new              (struct ev_loop *loop);
 void            cometd_destroy          (cometd* h);
 
 

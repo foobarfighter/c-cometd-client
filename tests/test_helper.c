@@ -2,6 +2,9 @@
 #include "../tests/test_helper.h"
 
 void await(int result){
-  fail_unless(result);
+  for (int i = 0; i < 100000; ++i){
+    if (!result){
+      sleep(1);
+  }
 }
 

@@ -36,6 +36,8 @@ AC_CHECK_HEADERS([stdlib.h])
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_CHECK_LIB(glib-2.0, g_list_append)
+AC_CHECK_LIB(libpthread, pthread_create)
+#TODO: check for pthread
 #AC_CHECK_LIB(libev, ev_run)
 
 # Output files
