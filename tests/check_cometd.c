@@ -1,9 +1,3 @@
-//int
-//main (void)
-//{
-//  return 0;
-//}
-
 #include <stdlib.h>
 #include <check.h>
 #include "../src/cometd.h"

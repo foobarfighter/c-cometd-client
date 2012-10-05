@@ -10,6 +10,7 @@
 #define DEFAULT_APPEND_MESSAGE_TYPE   1
 
 // Connection state
+#define COMETD_DISCONNECTED           0x00000000
 #define COMETD_CONNECTED              0x00000001
 
 // connection configuration object
