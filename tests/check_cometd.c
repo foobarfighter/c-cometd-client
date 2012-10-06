@@ -17,15 +17,17 @@ void teardown (void)
 {
   if (config != NULL)
     free(config);
-  if (instance != NULL)
-    free(instance);
+  if (instance != NULL){
+    cometd_destroy(instance);
+    instance = NULL;
+  }
 }
 
 cometd* create_cometd(){
   cometd_default_config(config);
   config->url = TEST_SERVER_URL;
   cometd_configure(config);
-  cometd* h = cometd_new(EV_DEFAULT);
+  return cometd_new(EV_DEFAULT);
 }
 
 START_TEST (test_cometd_configure)
@@ -62,13 +64,26 @@ START_TEST (test_cometd_new)
 END_TEST
 
 START_TEST (test_cometd_successful_init){
+  printf("CREATING INSTANCE\n");
   instance = create_cometd();
+  printf("CREATED INSTANCE\n");
   cometd_init(instance);
+  printf("COMETD INIT DONE\n");
 
-  while (true){
-    if (instance->conn->state != COMETD_CONNECTED)
-      sleep(1);
-  }
+  do {
+    sleep(1);
+    printf(".");
+
+    if (instance->conn->state == COMETD_CONNECTED)
+      break;
+  } while(1);
+
+  //while (1){
+    //printf(".");
+    //printf("in loop: %d", instance->conn->state);
+    //if (instance->conn->state != COMETD_CONNECTED)
+    //sleep(1);
+  //}
 }
 END_TEST
 
@@ -76,23 +91,18 @@ Suite* cometd_suite (void)
 {
   Suite *s = suite_create ("Cometd");
 
-  /* Core test case */
+  /* Unit tests */
   TCase *tc_unit = tcase_create ("Client::Unit");
   tcase_add_checked_fixture (tc_unit, setup, teardown);
   tcase_add_test (tc_unit, test_cometd_configure);
   tcase_add_test (tc_unit, test_cometd_new);
   suite_add_tcase (s, tc_unit);
 
+  /* Integration tests that require cometd server dependency */
   TCase *tc_integration = tcase_create ("Client::Integration");
   tcase_add_checked_fixture (tc_integration, setup, teardown);
   tcase_add_test (tc_integration, test_cometd_successful_init);
   suite_add_tcase (s, tc_integration);
-
-  /* Limits test case */
-  //TCase *tc_limits = tcase_create ("Limits");
-  //tcase_add_test (tc_limits, test_cometd_create_neg);
-  //tcase_add_test (tc_limits, test_cometd_create_zero);
-  //suite_add_tcase (s, tc_limits);
 
   return s;
 }

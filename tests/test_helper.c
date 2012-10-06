@@ -2,8 +2,10 @@
 #include "../tests/test_helper.h"
 
 void await(int result){
-  for (int i = 0; i < 100000; ++i){
-    if (!result){
+  int i;
+
+  for (i = 0; i < 100000; ++i){
+    if (!result)
       sleep(1);
   }
 }

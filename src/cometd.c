@@ -36,13 +36,28 @@ cometd_new(struct ev_loop *loop){
 }
 
 void*
-_cometd_init(void* thread_id){
+_cometd_init(void* handle){
+  cometd* h = (cometd* h) handle;
+  sleep(1);
+  printf("=================================== in cometd_init %s\n", "hi");
+  //cometd* h = (cometd*) handle;
+  //sleep(1);
+  //h->conn->state = COMETD_CONNECTED;
+  //pthread_exit(NULL);
 }
 
 int
 cometd_init(const cometd* h){
   pthread_t thread;
-  return pthread_create(&thread, NULL, _cometd_init, NULL);
+
+  printf("creating thread\n");
+  if (pthread_create(&thread, NULL, _cometd_init, (void*) h)){
+    return 1;
+  } else {
+    printf("created a thread\n");
+  }
+
+  return 0;
 }
 
 
@@ -50,7 +65,3 @@ void cometd_destroy(cometd* h){
   free(h->conn);
   free(h);
 }
-
-//int cometd_init(const &cometd_configuration config, const &properties props){
-//  return 0;
-//}
