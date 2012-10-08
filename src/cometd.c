@@ -39,18 +39,25 @@ cometd_init(const cometd* h){
 
 int
 cometd_handshake(const cometd* h, cometd_callback cb){
+  struct curl_slist *chunk = NULL;
+  chunk = curl_slist_append(chunk, "Content-Type: application/json");
+
+  char* data = "[{\"version\":\"1.0\",\"minimumVersion\":\"0.9\",\"channel\":\"/meta/handshake\",\"supportedConnectionTypes\":[\"long-polling\",\"callback-polling\"],\"advice\":{\"timeout\":60000,\"interval\":0},\"id\":\"1\"}]";
+
+  printf("data: %s\n", h->config->url);
+
   CURL* curl = curl_easy_init();
   curl_easy_setopt(curl, CURLOPT_URL, h->config->url);
-  curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
+  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+  curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(data));
+  curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
   CURLcode res = curl_easy_perform(curl);
-
 
   int ret = 0;
   if (res != CURLE_OK){
     ret = 1;
     //_error(curl_easy_strerror(res));
   }
-  printf("URL7: %s, %d\n", h->config->url, ret);
 
   curl_easy_cleanup(curl);
 
