@@ -44,8 +44,7 @@ typedef int (*cometd_callback)(cometd_message_t* msg);
 
 // configuration and lifecycel
 void            cometd_default_config   (cometd_config* config);
-cometd_config*  cometd_configure        (cometd_config *config);
-cometd*         cometd_new              ();
+cometd*         cometd_new              (cometd_config* config);
 void            cometd_destroy          (cometd* h);
 
 // bayeux protocol

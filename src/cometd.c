@@ -3,8 +3,6 @@
 #include <curl/curl.h>
 #include "cometd.h"
 
-cometd_config *_cometd_config = NULL;
-
 void
 cometd_default_config(cometd_config* config){
   config->url = "";
@@ -14,23 +12,15 @@ cometd_default_config(cometd_config* config){
   config->append_message_type_to_url = DEFAULT_APPEND_MESSAGE_TYPE;
 }
 
-cometd_config*
-cometd_configure(cometd_config *config){
-  if (config != NULL){
-    _cometd_config = config;
-  }
-
-  return _cometd_config;
-}
-
 cometd*
-cometd_new(){
+cometd_new(cometd_config* config){
   cometd* h = malloc(sizeof(cometd));
 
   cometd_conn* conn = malloc(sizeof(cometd_conn));
   conn->state = COMETD_DISCONNECTED;
 
-  h->conn = conn;
+  h->conn   = conn;
+  h->config = config;
   return h;
 }
 
@@ -50,7 +40,7 @@ cometd_init(const cometd* h){
 int
 cometd_handshake(const cometd* h, cometd_callback cb){
   CURL* curl = curl_easy_init();
-  curl_easy_setopt(curl, CURLOPT_URL, _cometd_config->url);
+  curl_easy_setopt(curl, CURLOPT_URL, h->config->url);
   curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
   CURLcode res = curl_easy_perform(curl);
 
@@ -60,7 +50,7 @@ cometd_handshake(const cometd* h, cometd_callback cb){
     ret = 1;
     //_error(curl_easy_strerror(res));
   }
-  printf("URL7: %s, %d\n", _cometd_config->url, ret);
+  printf("URL7: %s, %d\n", h->config->url, ret);
 
   curl_easy_cleanup(curl);
 
@@ -87,8 +77,6 @@ cometd_connect(const cometd* h, cometd_callback cb){
 //
 //int
 //cometd_subscribe(const char* channel, int(*handler)(cometd_message_t*));
-
-
 
 void cometd_destroy(cometd* h){
   free(h->conn);
