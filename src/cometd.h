@@ -33,14 +33,24 @@ typedef struct {
 typedef struct {
   cometd_conn* conn;
   cometd_config* config;
-  struct ev_loop* loop;
+  //struct ev_loop* loop;
 } cometd;
 
+typedef struct {
+  int successful;
+} cometd_message_t;
 
+typedef int (*cometd_callback)(cometd_message_t* msg);
+
+// configuration and lifecycel
 void            cometd_default_config   (cometd_config* config);
 cometd_config*  cometd_configure        (cometd_config *config);
-cometd*         cometd_new              (struct ev_loop *loop);
+cometd*         cometd_new              ();
 void            cometd_destroy          (cometd* h);
+
+// bayeux protocol
+int cometd_handshake (const cometd* h, cometd_callback cb);
+int cometd_connect   (const cometd* h, cometd_callback cb);
 
 
 #endif /* COMETD_H */

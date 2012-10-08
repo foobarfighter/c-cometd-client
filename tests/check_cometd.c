@@ -15,6 +15,7 @@ void setup (void)
 
 void teardown (void)
 {
+  printf("teardown\n");
   if (config != NULL)
     free(config);
   if (instance != NULL){
@@ -52,38 +53,27 @@ START_TEST (test_cometd_new)
   config->url = TEST_SERVER_URL;
   cometd_configure(config);
 
-  struct ev_loop* loop = EV_DEFAULT;
-
-  cometd* h = cometd_new(loop);
-  // FIXME: This tests passes even if loop isn't assigned
-  fail_unless(h->loop == loop);
+  cometd* h = cometd_new();
   fail_unless(h->conn->state == COMETD_DISCONNECTED);
   //fail_unless(h->config == config);
   cometd_destroy(h);
 }
 END_TEST
 
+
+// Integration
 START_TEST (test_cometd_successful_init){
-  printf("CREATING INSTANCE\n");
+  //printf("test_cometd_successful_init\n");
+  //instance = create_cometd();
+  //cometd_init(instance);
+  //fail_unless(instance->conn->state == COMETD_CONNECTED);
+}
+END_TEST
+
+START_TEST (test_cometd_handshake_successful){
   instance = create_cometd();
-  printf("CREATED INSTANCE\n");
-  cometd_init(instance);
-  printf("COMETD INIT DONE\n");
-
-  do {
-    sleep(1);
-    printf(".");
-
-    if (instance->conn->state == COMETD_CONNECTED)
-      break;
-  } while(1);
-
-  //while (1){
-    //printf(".");
-    //printf("in loop: %d", instance->conn->state);
-    //if (instance->conn->state != COMETD_CONNECTED)
-    //sleep(1);
-  //}
+  int code = cometd_handshake(instance, NULL);
+  fail_unless(code == 0);
 }
 END_TEST
 
@@ -102,6 +92,7 @@ Suite* cometd_suite (void)
   TCase *tc_integration = tcase_create ("Client::Integration");
   tcase_add_checked_fixture (tc_integration, setup, teardown);
   tcase_add_test (tc_integration, test_cometd_successful_init);
+  tcase_add_test (tc_integration, test_cometd_handshake_successful);
   suite_add_tcase (s, tc_integration);
 
   return s;

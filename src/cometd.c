@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <pthread.h>
+#include <curl/curl.h>
 #include "cometd.h"
-#include "../deps/libev-4.11/ev.h"
 
 cometd_config *_cometd_config = NULL;
 
@@ -24,9 +24,8 @@ cometd_configure(cometd_config *config){
 }
 
 cometd*
-cometd_new(struct ev_loop *loop){
+cometd_new(){
   cometd* h = malloc(sizeof(cometd));
-  h->loop = loop;
 
   cometd_conn* conn = malloc(sizeof(cometd_conn));
   conn->state = COMETD_DISCONNECTED;
@@ -35,30 +34,60 @@ cometd_new(struct ev_loop *loop){
   return h;
 }
 
-void*
-_cometd_init(void* handle){
-  cometd* h = (cometd* h) handle;
-  sleep(1);
-  printf("=================================== in cometd_init %s\n", "hi");
-  //cometd* h = (cometd*) handle;
-  //sleep(1);
-  //h->conn->state = COMETD_CONNECTED;
-  //pthread_exit(NULL);
-}
-
 int
 cometd_init(const cometd* h){
-  pthread_t thread;
-
-  printf("creating thread\n");
-  if (pthread_create(&thread, NULL, _cometd_init, (void*) h)){
+  if (cometd_handshake(h, NULL))
     return 1;
-  } else {
-    printf("created a thread\n");
-  }
+    //return _error(h, "handshake failed: %s", _error_msg(h));
+
+  if (cometd_connect(h, NULL))
+    return 1;
+    //return _error(h, "connect failed: %s", _error_msg(h));
 
   return 0;
 }
+
+int
+cometd_handshake(const cometd* h, cometd_callback cb){
+  CURL* curl = curl_easy_init();
+  curl_easy_setopt(curl, CURLOPT_URL, _cometd_config->url);
+  curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
+  CURLcode res = curl_easy_perform(curl);
+
+
+  int ret = 0;
+  if (res != CURLE_OK){
+    ret = 1;
+    //_error(curl_easy_strerror(res));
+  }
+  printf("URL7: %s, %d\n", _cometd_config->url, ret);
+
+  curl_easy_cleanup(curl);
+
+  return ret;
+}
+
+int
+cometd_connect(const cometd* h, cometd_callback cb){
+  return 0;
+}
+
+//TODO: This should accept variable formatting args
+//int
+//_error(const cometd* h, const char* format, const char* value){
+//  return 1;
+//}
+//
+//const char* _error_msg(const cometd *h){
+//  return "some error";
+//}
+
+//size_t
+//cometd_recv(cometd_message_t* message);
+//
+//int
+//cometd_subscribe(const char* channel, int(*handler)(cometd_message_t*));
+
 
 
 void cometd_destroy(cometd* h){

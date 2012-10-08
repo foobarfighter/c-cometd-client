@@ -37,6 +37,7 @@ AC_CHECK_HEADERS([stdlib.h])
 AC_FUNC_MALLOC
 AC_CHECK_LIB(glib-2.0, g_list_append)
 AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(curl, curl_easy_init)
 #TODO: check for pthread
 #AC_CHECK_LIB(libev, ev_run)
 
