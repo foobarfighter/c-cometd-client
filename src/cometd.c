@@ -1,7 +1,9 @@
 #include <stdlib.h>
-#include <pthread.h>
+#include <stddef.h>
+//#include <pthread.h>
 #include <curl/curl.h>
 #include "cometd.h"
+#include "json.h"
 
 void
 cometd_default_config(cometd_config* config){
@@ -18,9 +20,11 @@ cometd_new(cometd_config* config){
 
   cometd_conn* conn = malloc(sizeof(cometd_conn));
   conn->state = COMETD_DISCONNECTED;
+  conn->_msg_id_seed = 0;
 
-  h->conn   = conn;
-  h->config = config;
+  h->conn         = conn;
+  h->config       = config;
+
   return h;
 }
 
@@ -39,12 +43,13 @@ cometd_init(const cometd* h){
 
 int
 cometd_handshake(const cometd* h, cometd_callback cb){
+  JsonNode* message = json_mkobject();
+  cometd_create_handshake_req(h, message);
+
+  const char* data = json_stringify(message, NULL);
+
   struct curl_slist *chunk = NULL;
   chunk = curl_slist_append(chunk, "Content-Type: application/json");
-
-  char* data = "[{\"version\":\"1.0\",\"minimumVersion\":\"0.9\",\"channel\":\"/meta/handshake\",\"supportedConnectionTypes\":[\"long-polling\",\"callback-polling\"],\"advice\":{\"timeout\":60000,\"interval\":0},\"id\":\"1\"}]";
-
-  printf("data: %s\n", h->config->url);
 
   CURL* curl = curl_easy_init();
   curl_easy_setopt(curl, CURLOPT_URL, h->config->url);
@@ -60,6 +65,7 @@ cometd_handshake(const cometd* h, cometd_callback cb){
   }
 
   curl_easy_cleanup(curl);
+  json_delete(message);
 
   return ret;
 }
@@ -88,4 +94,40 @@ cometd_connect(const cometd* h, cometd_callback cb){
 void cometd_destroy(cometd* h){
   free(h->conn);
   free(h);
+}
+
+int cometd_create_handshake_req(const cometd* h, JsonNode* root){
+  long seed = ++(h->conn->_msg_id_seed);
+
+  json_append_member(root, COMETD_MSG_ID_FIELD,          json_mknumber(seed));
+  json_append_member(root, COMETD_MSG_CHANNEL_FIELD,     json_mkstring(COMETD_CHANNEL_META_HANDSHAKE));
+  json_append_member(root, COMETD_MSG_VERSION_FIELD,     json_mkstring(COMETD_VERSION));
+  json_append_member(root, COMETD_MSG_MIN_VERSION_FIELD, json_mkstring(COMETD_MIN_VERSION));
+
+  // construct advice - TODO: these values should not be hardcoded
+  JsonNode* advice = json_mkobject();
+  json_append_member(advice, "timeout",  json_mknumber(60000));
+  json_append_member(advice, "interval", json_mknumber(0));
+  json_append_member(root, COMETD_MSG_ADVICE_FIELD, advice);
+
+  // construct transports - TODO: implement this more fully when the concept of a transport is introduced
+  JsonNode* transports = json_mkarray();
+  json_append_element(transports, json_mkstring("long-polling"));
+  json_append_member(root, "supportedConnectionTypes", transports);
+
+  // call extensions with message - TODO: implement extensions first
+
+  return 0;
+}
+
+int
+cometd_msg_attr_set(cometd_message_t* message, int property, ...){
+  switch (property){
+  }
+}
+
+void*
+cometd_msg_attr_get(cometd_message_t* message, int property){
+  int hi;
+  return &hi;
 }

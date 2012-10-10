@@ -2,8 +2,11 @@
 #define COMETD_H
 
 #include "../deps/libev-4.11/ev.h"
+#include "json.h"
 
-#define NULL                          0
+// Version
+#define COMETD_VERSION                "1.0"
+#define COMETD_MIN_VERSION            "0.9"
 
 // Defaults
 #define DEFAULT_BACKOFF_INCREMENT     1000
@@ -14,6 +17,20 @@
 // Connection state
 #define COMETD_DISCONNECTED           0x00000000
 #define COMETD_CONNECTED              0x00000001
+
+// Message fields
+#define COMETD_MSG_ID_FIELD           "id"
+#define COMETD_MSG_CHANNEL_FIELD      "channel"
+#define COMETD_MSG_VERSION_FIELD      "version"
+#define COMETD_MSG_MIN_VERSION_FIELD  "minimumVersion"
+#define COMETD_MSG_ADVICE_FIELD       "advice"
+
+// Channels
+#define COMETD_CHANNEL_META_HANDSHAKE   "/meta/handshake"
+#define COMETD_CHANNEL_META_CONNECT     "/meta/connect"
+#define COMETD_CHANNEL_META_SUBSCRIBE   "/meta/subscribe"
+#define COMETD_CHANNEL_META_UNSUBSCRIBE "/meta/unsubscribe"
+#define COMETD_CHANNEL_META_DISCONNECT  "/meta/disconnect"
 
 // connection configuration object
 typedef struct {
@@ -26,7 +43,8 @@ typedef struct {
 
 // connection state object
 typedef struct {
-  int state;
+  int  state;
+  long _msg_id_seed;
 } cometd_conn;
 
 // cometd handle
@@ -40,9 +58,19 @@ typedef struct {
   int successful;
 } cometd_message_t;
 
-typedef int (*cometd_callback)(cometd_message_t* msg);
+//typedef struct {
+//  long   id;
+//  char*  version;
+//  char*  minimum_version;
+//  char*  channel;
+//  char** supported_connection_types;
+//}
 
-// configuration and lifecycel
+#define JSON_GET_DOUBLE(node)  (node->number_);
+
+typedef int (*cometd_callback)(cometd_message_t* message);
+
+// configuration and lifecycle
 void            cometd_default_config   (cometd_config* config);
 cometd*         cometd_new              (cometd_config* config);
 void            cometd_destroy          (cometd* h);
@@ -51,5 +79,12 @@ void            cometd_destroy          (cometd* h);
 int cometd_handshake (const cometd* h, cometd_callback cb);
 int cometd_connect   (const cometd* h, cometd_callback cb);
 
+// helpers
+int    cometd_msg_attr_set(cometd_message_t* message, int property, ...);
+void*  cometd_msg_attr_get(cometd_message_t* message, int property);
+double json_get_double(JsonNode* node);
+
+// message creation / serialization
+int cometd_create_handshake_req(const cometd* h, JsonNode* message);
 
 #endif /* COMETD_H */

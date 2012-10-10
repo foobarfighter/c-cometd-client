@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <check.h>
 #include "../src/cometd.h"
+#include "../src/json.h"
 #include "../tests/test_helper.h"
 
 #define TEST_SERVER_URL "http://localhost:8089/cometd"
@@ -16,6 +17,7 @@ void teardown (void)
 {
   if (g_config != NULL){
     free(g_config);
+    g_config = NULL;
   }
     
   if (g_instance != NULL){
@@ -64,17 +66,47 @@ START_TEST (test_cometd_new)
 }
 END_TEST
 
+START_TEST (test_cometd_create_handshake_req){
+  g_instance = create_cometd();
+
+  long seed = g_instance->conn->_msg_id_seed;
+
+  JsonNode* msg = json_mkobject();
+  cometd_create_handshake_req(g_instance, msg);
+
+  double id = JSON_GET_DOUBLE(json_find_member(msg, COMETD_MSG_ID_FIELD));
+  fail_unless(id == 1);
+
+  //cometd_message_t message;
+  //cometd_create_handshake_req(g_instance, &message);
+
+  //long msg_id = cometd_msg_attr_get(&message, COMETD_MSG_ID_FIELD);
+  //fail_unless(msg_id == 1);
+
+  //fail_unless(message.id == g_instance->_msg_id_seed);
+  //fail_unless(g_instance->_msg_id_seed == seed + 1);
+
+  //fail_unless(message.version == COMETD_VERSION);
+  //fail_unless(message.minimum_version == COMETD_MIN_SUPPORTED_VERSION);
+  //fail_unless(message.channel == COMETD_CHANNEL_META_HANDSHAKE);
+
+  //fail_unless(contains(message.supported_connection_types, "long-polling"));
+  //fail_unless(contains(message.supported_connection_types, "callback-polling"));
+  //fail_unless(same(message.advice, COMETD_HANDSHAKE_ADVICE));
+}
+END_TEST
+
 /*
  *  Integration Suite
  */
 START_TEST (test_cometd_successful_init){
-  //g_instance = create_cometd();
-  //cometd_init(g_instance);
-  //fail_unless(g_instance->conn->state == COMETD_CONNECTED);
+  g_instance = create_cometd();
+  cometd_init(g_instance);
+  fail_unless(g_instance->conn->state == COMETD_CONNECTED);
 }
 END_TEST
 
-START_TEST (test_cometd_handshake_successful){
+START_TEST (test_cometd_successful_handshake){
   g_instance = create_cometd();
   int code = cometd_handshake(g_instance, NULL);
   fail_unless(code == 0);
@@ -90,13 +122,14 @@ Suite* cometd_suite (void)
   tcase_add_checked_fixture (tc_unit, setup, teardown);
   tcase_add_test (tc_unit, test_cometd_default_config);
   tcase_add_test (tc_unit, test_cometd_new);
+  tcase_add_test (tc_unit, test_cometd_create_handshake_req);
   suite_add_tcase (s, tc_unit);
 
   /* Integration tests that require cometd server dependency */
   TCase *tc_integration = tcase_create ("Client::Integration");
   tcase_add_checked_fixture (tc_integration, setup, teardown);
   tcase_add_test (tc_integration, test_cometd_successful_init);
-  tcase_add_test (tc_integration, test_cometd_handshake_successful);
+  tcase_add_test (tc_integration, test_cometd_successful_handshake);
   suite_add_tcase (s, tc_integration);
 
   return s;
