@@ -59,7 +59,6 @@ typedef struct {
 typedef struct {
   cometd_conn* conn;
   cometd_config* config;
-  //struct ev_loop* loop;
 } cometd;
 
 //typedef struct {

@@ -36,17 +36,12 @@ AC_CHECK_HEADERS([stdlib.h])
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_CHECK_LIB(glib-2.0, g_list_append)
-AC_CHECK_LIB(pthread, pthread_create)
 AC_CHECK_LIB(curl, curl_easy_init)
-AC_CHECK_LIB(yajl, yajl_tree_parse)
-#TODO: check for pthread
-#AC_CHECK_LIB(libev, ev_run)
 
 # Output files
 AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_FILES([Makefile
-                 deps/libev-4.11/Makefile
                  src/Makefile
                  tests/Makefile])
 

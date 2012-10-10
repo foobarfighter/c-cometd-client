@@ -5,6 +5,4 @@ libcometd_la_SOURCES = json.c json.h cometd.c cometd.h
 
 bin_PROGRAMS = main
 main_SOURCES = main.c
-main_LDADD = libcometd.la \
-  $(top_builddir)/deps/libev-4.11/libev.la
-main_LIBS = -lpthread
+main_LDADD = libcometd.la
