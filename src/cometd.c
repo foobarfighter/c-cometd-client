@@ -91,12 +91,14 @@ cometd_connect(const cometd* h, cometd_callback cb){
 //int
 //cometd_subscribe(const char* channel, int(*handler)(cometd_message_t*));
 
-void cometd_destroy(cometd* h){
+void
+cometd_destroy(cometd* h){
   free(h->conn);
   free(h);
 }
 
-int cometd_create_handshake_req(const cometd* h, JsonNode* root){
+int
+cometd_create_handshake_req(const cometd* h, JsonNode* root){
   long seed = ++(h->conn->_msg_id_seed);
 
   json_append_member(root, COMETD_MSG_ID_FIELD,          json_mknumber(seed));
@@ -121,13 +123,9 @@ int cometd_create_handshake_req(const cometd* h, JsonNode* root){
 }
 
 int
-cometd_msg_attr_set(cometd_message_t* message, int property, ...){
-  switch (property){
-  }
+cometd_register_transport(const cometd_config* h, const cometd_transport* transport){
+  return 0;
 }
-
-void*
-cometd_msg_attr_get(cometd_message_t* message, int property){
-  int hi;
-  return &hi;
+int
+cometd_unregister_transport(const cometd_config* h, const char* name){
 }

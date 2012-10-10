@@ -52,6 +52,27 @@ START_TEST (test_cometd_default_config)
 }
 END_TEST
 
+int test_transport_send(JsonNode* node){ return 0; }
+int test_transport_recv(JsonNode* node){ return 0; }
+
+START_TEST (test_cometd_transport)
+{
+  g_config = (cometd_config*) malloc(sizeof(cometd_config));
+  cometd_default_config(g_config);
+
+  cometd_transport* transport = malloc(sizeof(cometd_transport));
+  transport->name = "test-transport";
+  transport->send = test_transport_send;
+  transport->recv = test_transport_recv;
+
+  cometd_register_transport(g_config, &transport);
+  //g_config->transports;
+  cometd_unregister_transport(g_config, "test-transport");
+
+  free(transport);
+}
+END_TEST
+
 START_TEST (test_cometd_new)
 {
   cometd_config config;
@@ -123,6 +144,7 @@ Suite* cometd_suite (void)
   tcase_add_test (tc_unit, test_cometd_default_config);
   tcase_add_test (tc_unit, test_cometd_new);
   tcase_add_test (tc_unit, test_cometd_create_handshake_req);
+  tcase_add_test (tc_unit, test_cometd_transport);
   suite_add_tcase (s, tc_unit);
 
   /* Integration tests that require cometd server dependency */

@@ -32,6 +32,14 @@
 #define COMETD_CHANNEL_META_UNSUBSCRIBE "/meta/unsubscribe"
 #define COMETD_CHANNEL_META_DISCONNECT  "/meta/disconnect"
 
+typedef int (*cometd_callback)(JsonNode* message);
+
+typedef struct {
+  char*           name;
+  cometd_callback send;
+  cometd_callback recv;
+} cometd_transport;
+
 // connection configuration object
 typedef struct {
   char* url;
@@ -54,10 +62,6 @@ typedef struct {
   //struct ev_loop* loop;
 } cometd;
 
-typedef struct {
-  int successful;
-} cometd_message_t;
-
 //typedef struct {
 //  long   id;
 //  char*  version;
@@ -68,21 +72,18 @@ typedef struct {
 
 #define JSON_GET_DOUBLE(node)  (node->number_);
 
-typedef int (*cometd_callback)(cometd_message_t* message);
-
 // configuration and lifecycle
-void            cometd_default_config   (cometd_config* config);
 cometd*         cometd_new              (cometd_config* config);
+void            cometd_default_config   (cometd_config* config);
 void            cometd_destroy          (cometd* h);
 
 // bayeux protocol
 int cometd_handshake (const cometd* h, cometd_callback cb);
 int cometd_connect   (const cometd* h, cometd_callback cb);
 
-// helpers
-int    cometd_msg_attr_set(cometd_message_t* message, int property, ...);
-void*  cometd_msg_attr_get(cometd_message_t* message, int property);
-double json_get_double(JsonNode* node);
+// transports
+int cometd_register_transport(const cometd_config* h, const cometd_transport* transport);
+int cometd_unregister_transport(const cometd_config* h, const char* name);
 
 // message creation / serialization
 int cometd_create_handshake_req(const cometd* h, JsonNode* message);
