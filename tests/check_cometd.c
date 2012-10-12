@@ -47,6 +47,7 @@ START_TEST (test_cometd_default_config)
 
   config.url = actual_url;
 
+  fail_unless(config.transports == NULL);
   fail_unless(strncmp(config.url, actual_url, sizeof(actual_url)) == 0);
   fail_unless(config.backoff_increment == DEFAULT_BACKOFF_INCREMENT);
 }
@@ -60,16 +61,26 @@ START_TEST (test_cometd_transport)
   g_config = (cometd_config*) malloc(sizeof(cometd_config));
   cometd_default_config(g_config);
 
-  cometd_transport* transport = malloc(sizeof(cometd_transport));
-  transport->name = "test-transport";
-  transport->send = test_transport_send;
-  transport->recv = test_transport_recv;
+  cometd_transport transport;
+  transport.name = "test-transport";
+  transport.send = test_transport_send;
+  transport.recv = test_transport_recv;
 
   cometd_register_transport(g_config, &transport);
-  //g_config->transports;
-  cometd_unregister_transport(g_config, "test-transport");
+  fail_unless(g_slist_length(g_config->transports) == 1);
 
-  free(transport);
+  // should not be able to find a transport that doesn't exist
+  cometd_transport* nullptr = cometd_find_transport(g_config, "0xdeadbeef");
+  fail_unless(nullptr == NULL);
+
+  // transport should be found by name
+  cometd_transport* t = cometd_find_transport(g_config, "test-transport");
+  fail_if(t == NULL);
+  fail_unless(strcmp(t->name, "test-transport") == 0);
+
+  // removing the transport should make it un-findable
+  cometd_unregister_transport(g_config, t->name);
+  fail_unless(cometd_find_transport(g_config, "test-transport") == NULL);
 }
 END_TEST
 

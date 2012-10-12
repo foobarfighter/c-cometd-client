@@ -1,7 +1,7 @@
 #ifndef COMETD_H
 #define COMETD_H
 
-#include "../deps/libev-4.11/ev.h"
+#include <glib.h>
 #include "json.h"
 
 // Version
@@ -42,11 +42,12 @@ typedef struct {
 
 // connection configuration object
 typedef struct {
-  char* url;
-  int   backoff_increment;
-  int   max_backoff;
-  int   max_network_delay;
-  int   append_message_type_to_url;
+  char*    url;
+  int      backoff_increment;
+  int      max_backoff;
+  int      max_network_delay;
+  int      append_message_type_to_url;
+  GSList*  transports; 
 } cometd_config;
 
 // connection state object
@@ -81,8 +82,9 @@ int cometd_handshake (const cometd* h, cometd_callback cb);
 int cometd_connect   (const cometd* h, cometd_callback cb);
 
 // transports
-int cometd_register_transport(const cometd_config* h, const cometd_transport* transport);
-int cometd_unregister_transport(const cometd_config* h, const char* name);
+int               cometd_register_transport    (cometd_config* h, const cometd_transport* transport);
+int               cometd_unregister_transport  (cometd_config* h, const char* name);
+cometd_transport* cometd_find_transport        (const cometd_config* h, const char *name);
 
 // message creation / serialization
 int cometd_create_handshake_req(const cometd* h, JsonNode* message);

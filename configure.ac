@@ -35,7 +35,7 @@ AC_CHECK_HEADERS([stdlib.h])
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_LIB(glib-2.0, g_list_append)
+AC_CHECK_LIB(glib-2.0, g_slist_append)
 AC_CHECK_LIB(curl, curl_easy_init)
 
 # Output files

@@ -12,6 +12,8 @@ cometd_default_config(cometd_config* config){
   config->max_backoff       = DEFAULT_MAX_BACKOFF;
   config->max_network_delay = DEFAULT_MAX_NETWORK_DELAY;
   config->append_message_type_to_url = DEFAULT_APPEND_MESSAGE_TYPE;
+  config->transports = NULL;
+
 }
 
 cometd*
@@ -93,6 +95,7 @@ cometd_connect(const cometd* h, cometd_callback cb){
 
 void
 cometd_destroy(cometd* h){
+  //g_slist_free(h->transports);
   free(h->conn);
   free(h);
 }
@@ -123,9 +126,40 @@ cometd_create_handshake_req(const cometd* h, JsonNode* root){
 }
 
 int
-cometd_register_transport(const cometd_config* h, const cometd_transport* transport){
+cometd_register_transport(cometd_config* h, const cometd_transport* transport){
+  cometd_transport *t = g_new(cometd_transport, 1);
+
+  t->name = transport->name;
+  t->send = transport->send;
+  t->recv = transport->recv;
+
+  h->transports = g_slist_append(h->transports, t);
+
   return 0;
 }
+
+gint
+_find_transport_by_name(gconstpointer a, gconstpointer b){
+  const cometd_transport* t = (const cometd_transport*) a;
+  const char* expected = (const char*) b;
+  printf("in find %d, %d\n", strlen(t->name), strcmp(t->name, expected));
+  return strcmp(t->name, expected);
+}
+
 int
-cometd_unregister_transport(const cometd_config* h, const char* name){
+cometd_unregister_transport(cometd_config* h, const char* name){
+  GList* t = g_slist_find_custom(h->transports, name, _find_transport_by_name);
+  if (t == NULL) return NULL;
+
+  h->transports = g_slist_remove(h->transports, t->data);
+  g_free(t);
+
+  return 0;
+}
+
+cometd_transport*
+cometd_find_transport(const cometd_config* h, const char *name){
+  GList* t = g_slist_find_custom(h->transports, name, _find_transport_by_name);
+  return (t == NULL) ? NULL : (cometd_transport*) t->data;
+
 }
