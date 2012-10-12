@@ -140,6 +140,11 @@ END_TEST
 
 START_TEST (test_cometd_successful_handshake){
   g_instance = create_cometd();
+
+  cometd_transport t;
+  t.name = "long-polling";
+  cometd_register_transport(g_instance->config, &t);
+
   int code = cometd_handshake(g_instance, NULL);
   fail_unless(code == 0);
 }

@@ -115,10 +115,16 @@ cometd_create_handshake_req(const cometd* h, JsonNode* root){
   json_append_member(advice, "interval", json_mknumber(0));
   json_append_member(root, COMETD_MSG_ADVICE_FIELD, advice);
 
-  // construct transports - TODO: implement this more fully when the concept of a transport is introduced
-  JsonNode* transports = json_mkarray();
-  json_append_element(transports, json_mkstring("long-polling"));
-  json_append_member(root, "supportedConnectionTypes", transports);
+  // construct supported transports
+  JsonNode* json_transports = json_mkarray();
+
+  GList* entry = h->config->transports;
+  while (entry){
+    cometd_transport* t = entry->data;
+    json_append_element(json_transports, json_mkstring(t->name));
+    entry = g_slist_next(entry);
+  }
+  json_append_member(root, "supportedConnectionTypes", json_transports);
 
   // call extensions with message - TODO: implement extensions first
 
@@ -141,9 +147,7 @@ cometd_register_transport(cometd_config* h, const cometd_transport* transport){
 gint
 _find_transport_by_name(gconstpointer a, gconstpointer b){
   const cometd_transport* t = (const cometd_transport*) a;
-  const char* expected = (const char*) b;
-  printf("in find %d, %d\n", strlen(t->name), strcmp(t->name, expected));
-  return strcmp(t->name, expected);
+  return strcmp(t->name, b);
 }
 
 int
