@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stddef.h>
-#include <curl/curl.h>
 #include "cometd.h"
 #include "json.h"
+#include "http.h"
 #include "transport_long_polling.h"
 
 void
@@ -13,10 +13,6 @@ cometd_default_config(cometd_config* config){
   config->max_network_delay = DEFAULT_MAX_NETWORK_DELAY;
   config->append_message_type_to_url = DEFAULT_APPEND_MESSAGE_TYPE;
   config->transports = NULL;
-
-  //cometd_transport* t = malloc(sizeof(cometd_transport));
-  //t->name = "long-polling";
-  //cometd_register_transport(config, t);
 
   cometd_register_transport(config, &COMETD_TRANSPORT_LONG_POLLING);
 }
@@ -48,55 +44,33 @@ cometd_init(const cometd* h){
   return 0;
 }
 
+
 int
 cometd_handshake(const cometd* h, cometd_callback cb){
   JsonNode* message = json_mkobject();
   cometd_create_handshake_req(h, message);
 
-  const char* data = json_stringify(message, NULL);
+  char* response = http_json_post(h->config->url, json_stringify(message, NULL));
 
-  struct curl_slist *chunk = NULL;
-  chunk = curl_slist_append(chunk, "Content-Type: application/json");
+  //if (response == NULL)
+  //  return _error("some bullshit");
 
-  CURL* curl = curl_easy_init();
-  curl_easy_setopt(curl, CURLOPT_URL, h->config->url);
-  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-  curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(data));
-  curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
-  CURLcode res = curl_easy_perform(curl);
+  // TODO: Flesh this shiz out
+  //_negotiate_transport();
 
-  int ret = 0;
-  if (res != CURLE_OK){
-    ret = 1;
-    //_error(curl_easy_strerror(res));
-  }
-
-  curl_easy_cleanup(curl);
   json_delete(message);
+  free(response);
 
-  return ret;
+  h->conn->transport = &COMETD_TRANSPORT_LONG_POLLING;
+
+  return 0;
 }
+
 
 int
 cometd_connect(const cometd* h, cometd_callback cb){
   return 0;
 }
-
-//TODO: This should accept variable formatting args
-//int
-//_error(const cometd* h, const char* format, const char* value){
-//  return 1;
-//}
-//
-//const char* _error_msg(const cometd *h){
-//  return "some error";
-//}
-
-//size_t
-//cometd_recv(cometd_message_t* message);
-//
-//int
-//cometd_subscribe(const char* channel, int(*handler)(cometd_message_t*));
 
 void
 cometd_destroy(cometd* h){
@@ -144,7 +118,7 @@ cometd_register_transport(cometd_config* h, const cometd_transport* transport){
   t->send = transport->send;
   t->recv = transport->recv;
 
-  h->transports = g_slist_append(h->transports, t);
+  h->transports = g_slist_prepend(h->transports, t);
 
   return 0;
 }

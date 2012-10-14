@@ -146,6 +146,8 @@ START_TEST (test_cometd_successful_handshake){
 
   int code = cometd_handshake(g_instance, NULL);
   fail_unless(code == 0);
+
+  fail_unless(strcmp(g_instance->conn->transport->name, "long-polling") == 0);
 }
 END_TEST
 

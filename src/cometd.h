@@ -55,8 +55,9 @@ typedef struct {
 
 // connection state object
 typedef struct {
-  int  state;
-  long _msg_id_seed;
+  int               state;
+  long              _msg_id_seed;
+  cometd_transport* transport;
 } cometd_conn;
 
 // cometd handle

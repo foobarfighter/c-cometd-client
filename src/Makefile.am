@@ -4,6 +4,7 @@ lib_LTLIBRARIES = libcometd.la
 libcometd_la_CFLAGS = `pkg-config --cflags glib-2.0` # needed to compile libcometd
 libcometd_la_LIBS = `pkg-config --libs glib-2.0`
 libcometd_la_SOURCES = json.c json.h \
+  http.c \
   transport_long_polling.c transport_long_polling.h \
   cometd.c cometd.h
 
