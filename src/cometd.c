@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <stddef.h>
-//#include <pthread.h>
 #include <curl/curl.h>
 #include "cometd.h"
 #include "json.h"
+#include "transport_long_polling.h"
 
 void
 cometd_default_config(cometd_config* config){
@@ -14,6 +14,11 @@ cometd_default_config(cometd_config* config){
   config->append_message_type_to_url = DEFAULT_APPEND_MESSAGE_TYPE;
   config->transports = NULL;
 
+  //cometd_transport* t = malloc(sizeof(cometd_transport));
+  //t->name = "long-polling";
+  //cometd_register_transport(config, t);
+
+  cometd_register_transport(config, &COMETD_TRANSPORT_LONG_POLLING);
 }
 
 cometd*
@@ -155,8 +160,9 @@ cometd_unregister_transport(cometd_config* h, const char* name){
   GList* t = g_slist_find_custom(h->transports, name, _find_transport_by_name);
   if (t == NULL) return NULL;
 
-  h->transports = g_slist_remove(h->transports, t->data);
-  g_free(t);
+  cometd_transport* transport = (cometd_transport*) t->data;
+  h->transports = g_slist_remove(h->transports, transport);
+  g_free(transport);
 
   return 0;
 }

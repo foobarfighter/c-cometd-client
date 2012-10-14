@@ -47,9 +47,9 @@ START_TEST (test_cometd_default_config)
 
   config.url = actual_url;
 
-  fail_unless(config.transports == NULL);
   fail_unless(strncmp(config.url, actual_url, sizeof(actual_url)) == 0);
   fail_unless(config.backoff_increment == DEFAULT_BACKOFF_INCREMENT);
+  fail_if(cometd_find_transport(&config, "long-polling") == NULL);
 }
 END_TEST
 
@@ -66,8 +66,11 @@ START_TEST (test_cometd_transport)
   transport.send = test_transport_send;
   transport.recv = test_transport_recv;
 
+  // should have default transports + test-transport
   cometd_register_transport(g_config, &transport);
-  fail_unless(g_slist_length(g_config->transports) == 1);
+
+  // default transports + test-transport
+  fail_unless(g_slist_length(g_config->transports) == 2);
 
   // should not be able to find a transport that doesn't exist
   cometd_transport* nullptr = cometd_find_transport(g_config, "0xdeadbeef");
@@ -140,10 +143,6 @@ END_TEST
 
 START_TEST (test_cometd_successful_handshake){
   g_instance = create_cometd();
-
-  cometd_transport t;
-  t.name = "long-polling";
-  cometd_register_transport(g_instance->config, &t);
 
   int code = cometd_handshake(g_instance, NULL);
   fail_unless(code == 0);
