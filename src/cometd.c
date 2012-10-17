@@ -44,26 +44,41 @@ cometd_init(const cometd* h){
   return 0;
 }
 
+int
+_negotiate_transport(const cometd* h, JsonNode* node){
+  int code = 0;
+  
+
+  return code;
+}
 
 int
 cometd_handshake(const cometd* h, cometd_callback cb){
-  JsonNode* message = json_mkobject();
-  cometd_create_handshake_req(h, message);
+  int code = 0;
 
-  char* response = http_json_post(h->config->url, json_stringify(message, NULL));
+  JsonNode* msg_handshake_req = json_mkobject();
+  cometd_create_handshake_req(h, msg_handshake_req);
 
-  //if (response == NULL)
-  //  return _error("some bullshit");
+  const char* raw_response = http_json_post(h->config->url, json_stringify(msg_handshake_req, NULL));
+  json_delete(msg_handshake_req);
 
-  // TODO: Flesh this shiz out
-  //_negotiate_transport();
+  JsonNode* json_response = NULL;
 
-  json_delete(message);
-  free(response);
+  if (raw_response != NULL){
+    json_response = json_decode(raw_response);
+    printf("---------> raw_response: %s\n", raw_response);
+    code = _negotiate_transport(h, json_response);
+  } else {
+    code = 1;
+  }
 
-  h->conn->transport = &COMETD_TRANSPORT_LONG_POLLING;
+  if (raw_response != NULL)
+    free(raw_response);
 
-  return 0;
+  if (json_response != NULL)
+    json_delete(json_response);
+
+  return code;
 }
 
 
