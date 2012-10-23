@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include <stddef.h>
+#include <json-glib/json-glib.h>
+
 #include "cometd.h"
-#include "json.h"
 #include "http.h"
 #include "transport_long_polling.h"
 
@@ -45,29 +46,73 @@ cometd_init(const cometd* h){
 }
 
 int
-_negotiate_transport(const cometd* h, JsonNode* node){
-  int code = 0;
-  
+_negotiate_transport(const cometd* h, JsonNode* node)
+{
+  int found = 0;
 
-  return code;
+  JsonArray*  msgs  = json_node_get_array(node);
+  //TODO: assert(json_array_get_length(msgs) == 1);
+
+  JsonObject* obj   = json_array_get_object_element(msgs, 0);
+  JsonArray*  types = json_object_get_array_member(obj, "supportedConnectionTypes");
+
+  if (!types || json_array_get_length(types) == 0) return 0;
+
+  GList* client_entry      = h->config->transports;
+  GList* server_entry_list = json_array_get_elements(types);
+
+  // Loop through the client side transports
+  while (client_entry){
+    cometd_transport* transport = client_entry->data;
+
+    GList* server_entry = server_entry_list;
+
+    // Loop through the list of connection types supported by the server 
+    while (server_entry){
+      if (!strcmp(transport->name, json_node_get_string(server_entry->data))){
+        h->conn->transport = transport;
+        found = 1;
+        break;
+      }
+      server_entry = g_slist_next(server_entry);
+    }
+
+    client_entry = g_slist_next(client_entry);
+
+    if (found){ break; }
+  }
+
+  g_list_free(server_entry_list);
+
+  // TODO: there has to be a better way to do this in C
+  return (found == 1) ? 0 : 1;
 }
 
 int
 cometd_handshake(const cometd* h, cometd_callback cb){
   int code = 0;
+  gsize len = 0;
 
-  JsonNode* msg_handshake_req = json_mkobject();
+  JsonNode* msg_handshake_req = json_node_new(JSON_NODE_OBJECT);
   cometd_create_handshake_req(h, msg_handshake_req);
 
-  const char* raw_response = http_json_post(h->config->url, json_stringify(msg_handshake_req, NULL));
-  json_delete(msg_handshake_req);
+  JsonGenerator* gen = json_generator_new();
+  json_generator_set_root(gen, msg_handshake_req);
+
+  gchar* data = json_generator_to_data(gen, &len);
+
+  const char* raw_response = http_json_post(h->config->url, data);
+  //json_delete(msg_handshake_req);
 
   JsonNode* json_response = NULL;
 
   if (raw_response != NULL){
-    json_response = json_decode(raw_response);
-    printf("---------> raw_response: %s\n", raw_response);
-    code = _negotiate_transport(h, json_response);
+    JsonParser* parser = json_parser_new();
+    // TODO: This should account for errors or check return value
+    json_parser_load_from_data(parser, raw_response, strlen(raw_response), NULL);
+
+    JsonNode* root = json_parser_get_root(parser);
+    code = _negotiate_transport(h, root);
   } else {
     code = 1;
   }
@@ -75,8 +120,8 @@ cometd_handshake(const cometd* h, cometd_callback cb){
   if (raw_response != NULL)
     free(raw_response);
 
-  if (json_response != NULL)
-    json_delete(json_response);
+  //if (json_response != NULL)
+  //  json_delete(json_response);
 
   return code;
 }
@@ -96,31 +141,36 @@ cometd_destroy(cometd* h){
 
 int
 cometd_create_handshake_req(const cometd* h, JsonNode* root){
-  long seed = ++(h->conn->_msg_id_seed);
+  g_type_init();  // WTF
 
-  json_append_member(root, COMETD_MSG_ID_FIELD,          json_mknumber(seed));
-  json_append_member(root, COMETD_MSG_CHANNEL_FIELD,     json_mkstring(COMETD_CHANNEL_META_HANDSHAKE));
-  json_append_member(root, COMETD_MSG_VERSION_FIELD,     json_mkstring(COMETD_VERSION));
-  json_append_member(root, COMETD_MSG_MIN_VERSION_FIELD, json_mkstring(COMETD_MIN_VERSION));
+  gint64 seed = ++(h->conn->_msg_id_seed);
+
+  JsonObject* obj = json_object_new();
+  json_object_set_int_member   (obj, COMETD_MSG_ID_FIELD,          seed);
+  json_object_set_string_member(obj, COMETD_MSG_CHANNEL_FIELD,     COMETD_CHANNEL_META_HANDSHAKE);
+  json_object_set_string_member(obj, COMETD_MSG_VERSION_FIELD,     COMETD_VERSION);
+  json_object_set_string_member(obj, COMETD_MSG_MIN_VERSION_FIELD, COMETD_MIN_VERSION);
 
   // construct advice - TODO: these values should not be hardcoded
-  JsonNode* advice = json_mkobject();
-  json_append_member(advice, "timeout",  json_mknumber(60000));
-  json_append_member(advice, "interval", json_mknumber(0));
-  json_append_member(root, COMETD_MSG_ADVICE_FIELD, advice);
+  JsonObject* advice = json_object_new();
+  json_object_set_int_member(advice, "timeout",  60000);
+  json_object_set_int_member(advice, "interval", 0);
+  json_object_set_object_member(obj, COMETD_MSG_ADVICE_FIELD, advice);
 
   // construct supported transports
-  JsonNode* json_transports = json_mkarray();
+  JsonObject* json_transports = json_array_new();
 
   GList* entry = h->config->transports;
   while (entry){
     cometd_transport* t = entry->data;
-    json_append_element(json_transports, json_mkstring(t->name));
+    json_array_add_string_element(json_transports, t->name);
     entry = g_slist_next(entry);
   }
-  json_append_member(root, "supportedConnectionTypes", json_transports);
+  json_object_set_array_member(obj, "supportedConnectionTypes", json_transports);
 
   // call extensions with message - TODO: implement extensions first
+
+  json_node_take_object(root, obj);
 
   return 0;
 }

@@ -2,7 +2,7 @@
 #define COMETD_H
 
 #include <glib.h>
-#include "json.h"
+#include <json-glib/json-glib.h>
 
 // Version
 #define COMETD_VERSION                "1.0"
