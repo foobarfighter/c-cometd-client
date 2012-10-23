@@ -126,11 +126,45 @@ cometd_handshake(const cometd* h, cometd_callback cb){
   return code;
 }
 
+cometd_transport*
+cometd_current_transport(const cometd* h){
+  g_return_val_if_fail(h != NULL, NULL);
+  g_return_val_if_fail(h->conn != NULL, NULL);
+  
+  return h->conn->transport;
+}
+
+JsonNode*
+cometd_new_connect_message(const cometd* h){
+  JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
+  JsonObject* obj  = json_object_new();
+
+  gint64 seed = ++(h->conn->_msg_id_seed);
+  char*  connection_type = cometd_current_transport(h)->name;
+
+  json_object_set_int_member   (obj, COMETD_MSG_ID_FIELD,      seed);
+  json_object_set_string_member(obj, COMETD_MSG_CHANNEL_FIELD, COMETD_CHANNEL_META_CONNECT);
+  json_object_set_string_member(obj, "connectionType",         connection_type);
+  json_object_set_string_member(obj, "clientId",               "clientIdFromServer");
+
+  json_node_take_object(root, obj);
+
+  return root;
+}
 
 int
 cometd_connect(const cometd* h, cometd_callback cb){
+  cometd_transport* t = cometd_current_transport(h);
+
+  g_return_val_if_fail(t != NULL, 0);
+
+  JsonNode* msg = cometd_new_connect_message(h);
+  //t->send(msg);
+  //TODO: cleanup msg
+
   return 0;
 }
+
 
 void
 cometd_destroy(cometd* h){
