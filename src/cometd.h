@@ -54,10 +54,13 @@ typedef struct {
 } cometd_config;
 
 // connection state object
+#define COMETD_MAX_CLIENT_ID_LEN 128
+
 typedef struct {
-  int               state;
-  long              _msg_id_seed;
-  cometd_transport* transport;
+  int                            state;
+  long                           _msg_id_seed;
+  cometd_transport*              transport;
+  char client_id[COMETD_MAX_CLIENT_ID_LEN];
 } cometd_conn;
 
 // cometd handle

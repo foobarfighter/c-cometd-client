@@ -46,14 +46,10 @@ cometd_init(const cometd* h){
 }
 
 int
-_negotiate_transport(const cometd* h, JsonNode* node)
+_negotiate_transport(const cometd* h, JsonObject* obj)
 {
   int found = 0;
 
-  JsonArray*  msgs  = json_node_get_array(node);
-  //TODO: assert(json_array_get_length(msgs) == 1);
-
-  JsonObject* obj   = json_array_get_object_element(msgs, 0);
   JsonArray*  types = json_object_get_array_member(obj, "supportedConnectionTypes");
 
   if (!types || json_array_get_length(types) == 0) return 0;
@@ -89,6 +85,29 @@ _negotiate_transport(const cometd* h, JsonNode* node)
 }
 
 int
+_extract_client_id(const cometd* h, JsonObject* node){
+  return strncpy(
+    h->conn->client_id,
+    json_object_get_string_member(node, "clientId"),
+    COMETD_MAX_CLIENT_ID_LEN
+  );
+}
+
+
+void
+_process_handshake(JsonArray *array, guint idx, JsonNode* node, gpointer data)
+{
+  cometd* h = (cometd*) data;
+  JsonObject* obj = json_node_get_object(node);
+
+  if (idx == 0) {
+    _negotiate_transport(h, obj);
+    _extract_client_id(h, obj);
+  }
+}
+
+
+int
 cometd_handshake(const cometd* h, cometd_callback cb){
   int code = 0;
   gsize len = 0;
@@ -101,18 +120,26 @@ cometd_handshake(const cometd* h, cometd_callback cb){
 
   gchar* data = json_generator_to_data(gen, &len);
 
+  // raw_response is allocated on the heap
   const char* raw_response = http_json_post(h->config->url, data);
-  //json_delete(msg_handshake_req);
-
-  JsonNode* json_response = NULL;
 
   if (raw_response != NULL){
     JsonParser* parser = json_parser_new();
+
     // TODO: This should account for errors or check return value
     json_parser_load_from_data(parser, raw_response, strlen(raw_response), NULL);
 
     JsonNode* root = json_parser_get_root(parser);
-    code = _negotiate_transport(h, root);
+    // TODO: assert root is array with len 1
+
+    JsonArray* arr = json_node_get_array(root);
+    json_array_foreach_element(arr, _process_handshake, h);
+
+    // TODO
+    //if (cometd_get_last_error(h){
+    //  code = 1;
+    //}
+
   } else {
     code = 1;
   }
@@ -120,8 +147,7 @@ cometd_handshake(const cometd* h, cometd_callback cb){
   if (raw_response != NULL)
     free(raw_response);
 
-  //if (json_response != NULL)
-  //  json_delete(json_response);
+  // TODO: dealloc parser
 
   return code;
 }
@@ -153,16 +179,18 @@ cometd_new_connect_message(const cometd* h){
 }
 
 int
-cometd_connect(const cometd* h, cometd_callback cb){
+cometd_transport_send(const cometd* h, JsonNode* msg){
   cometd_transport* t = cometd_current_transport(h);
 
   g_return_val_if_fail(t != NULL, 0);
 
-  JsonNode* msg = cometd_new_connect_message(h);
-  //t->send(msg);
-  //TODO: cleanup msg
+  return t->send(h, msg);
+}
 
-  return 0;
+int
+cometd_connect(const cometd* h, cometd_callback cb){
+  JsonNode* msg = cometd_new_connect_message(h);
+  return cometd_transport_send(h, msg);
 }
 
 
