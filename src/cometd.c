@@ -171,7 +171,7 @@ cometd_new_connect_message(const cometd* h){
   json_object_set_int_member   (obj, COMETD_MSG_ID_FIELD,      seed);
   json_object_set_string_member(obj, COMETD_MSG_CHANNEL_FIELD, COMETD_CHANNEL_META_CONNECT);
   json_object_set_string_member(obj, "connectionType",         connection_type);
-  json_object_set_string_member(obj, "clientId",               "clientIdFromServer");
+  json_object_set_string_member(obj, "clientId",               h->conn->client_id);
 
   json_node_take_object(root, obj);
 
