@@ -152,6 +152,7 @@ Suite* cometd_suite (void)
   /* Integration tests that require cometd server dependency */
   TCase *tc_integration = tcase_create ("Client::Integration");
   tcase_add_checked_fixture (tc_integration, setup, teardown);
+  tcase_set_timeout (tc_integration, 100);
   tcase_add_test (tc_integration, test_cometd_successful_init);
   tcase_add_test (tc_integration, test_cometd_successful_handshake);
   suite_add_tcase (s, tc_integration);

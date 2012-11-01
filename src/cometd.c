@@ -182,7 +182,7 @@ int
 cometd_transport_send(const cometd* h, JsonNode* msg){
   cometd_transport* t = cometd_current_transport(h);
 
-  g_return_val_if_fail(t != NULL, 0);
+  g_return_val_if_fail(t != NULL, 1);
 
   return t->send(h, msg);
 }
@@ -190,7 +190,14 @@ cometd_transport_send(const cometd* h, JsonNode* msg){
 int
 cometd_connect(const cometd* h, cometd_callback cb){
   JsonNode* msg = cometd_new_connect_message(h);
-  return cometd_transport_send(h, msg);
+
+  int ret = 0;
+  if (ret = cometd_transport_send(h, msg)){
+    return ret;
+  }
+
+  h->conn->state = COMETD_CONNECTED;
+  return ret;
 }
 
 
