@@ -1,15 +1,13 @@
-libcometd
-=========
+= libcometd
 
 A cometd client library written in C
 
-Building
---------
+== Dependencies
+glib-2.0
+json-glib-1.0
+curl
 
-Clone the repo and run the following:
+== Test Dependencies
+check
 
-./autgen.sh
-./configure
-make
-make check
-
+== Building
