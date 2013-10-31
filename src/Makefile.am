@@ -5,7 +5,8 @@ libcometd_la_CFLAGS = `pkg-config --cflags glib-2.0 json-glib-1.0` # needed to c
 libcometd_la_LIBS = `pkg-config --libs glib-2.0 json-glib-1.0`
 libcometd_la_SOURCES = http.c \
   transport_long_polling.c transport_long_polling.h \
-  cometd.c cometd.h
+  cometd.c cometd.h \
+  libev/ev.c libev/ev.h
 
 bin_PROGRAMS = main
 main_SOURCES = main.c

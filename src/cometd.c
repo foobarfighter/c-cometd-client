@@ -2,6 +2,9 @@
 #include <stddef.h>
 #include <json-glib/json-glib.h>
 
+#define EV_STANDALONE 1
+#include "libev/ev.h"
+
 #include "cometd.h"
 #include "http.h"
 #include "transport_long_polling.h"
@@ -34,6 +37,8 @@ cometd_new(cometd_config* config){
 
 int
 cometd_init(const cometd* h){
+  struct ev_loop *loop = malloc(ev_loop);
+
   if (cometd_handshake(h, NULL))
     return 1;
     //return _error(h, "handshake failed: %s", _error_msg(h));
