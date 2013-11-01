@@ -2,8 +2,7 @@
 #include <stddef.h>
 #include <json-glib/json-glib.h>
 
-#define EV_STANDALONE 1
-#include "libev/ev.h"
+#include "../deps/ev/ev.h"
 
 #include "cometd.h"
 #include "http.h"

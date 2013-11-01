@@ -1,3 +1,3 @@
-add_subdirectory(libev)
-add_library(deps)
-target_link_libraries(deps libev)
+add_subdirectory(ev)
+add_library(deps deps.c)
+target_link_libraries(deps ev)
