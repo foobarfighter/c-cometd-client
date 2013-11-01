@@ -11,3 +11,9 @@ curl
 check
 
 == Building
+
+Get the dependencies:
+
+```
+sudo port install glib2-devel
+sudo port install json-glib
