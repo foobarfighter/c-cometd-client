@@ -1,4 +1,3 @@
-enable_testing()
 find_package(Check REQUIRED)
 include_directories (${GLIB2_INCLUDE_DIR} ${JsonGlib_INCLUDE_DIRS} ${ev_INCLUDE_DIRS} ${CHECK_INCLUDE_DIRS})
 include_directories(. ../src)

@@ -3,4 +3,4 @@
 rm -rf ./build && mkdir build
 cd build
 cmake ..
-make clean && make && tests/check_cometd
+make clean && make && ctest --output-on-failure .
