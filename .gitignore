@@ -3,3 +3,4 @@
 *.swn
 build
 .deps
+node_modules

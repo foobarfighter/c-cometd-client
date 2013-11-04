@@ -1,5 +1,6 @@
 var Faye   = require('faye')
-  , server = new Faye.NodeAdapter({mount: '/cometd'});
+  , http   = require('http')
+  , bayeux = new Faye.NodeAdapter({mount: '/cometd', timeout: 10});
 
 var Inspect = {
   incoming: function (message, callback){
@@ -17,7 +18,10 @@ var Inspect = {
   }
 }
 
-server.addExtension(Inspect);
+var server = http.createServer();
+
+bayeux.addExtension(Inspect);
+bayeux.attach(server);
 server.listen(8089);
 
 console.log("server started\n");
