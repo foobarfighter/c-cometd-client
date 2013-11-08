@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <check.h>
+#include <glib.h>
 
 #include "../src/cometd.h"
 #include "../tests/test_helper.h"
@@ -26,7 +27,8 @@ void teardown (void)
   }
 }
 
-cometd* create_cometd(){
+cometd*
+create_cometd(){
   g_config = (cometd_config*) malloc(sizeof(cometd_config));
   cometd_default_config(g_config);
 
@@ -34,6 +36,10 @@ cometd* create_cometd(){
 
   return cometd_new(g_config);
 }
+
+int test_transport_send(const cometd* h, JsonNode* node){ return 0; }
+int test_transport_recv(const cometd* h){ return 0; }
+
 
 /*
  *  Unit Test Suite
@@ -52,9 +58,6 @@ START_TEST (test_cometd_default_config)
   fail_if(cometd_find_transport(&config, "long-polling") == NULL);
 }
 END_TEST
-
-int test_transport_send(JsonNode* node){ return 0; }
-int test_transport_recv(JsonNode* node){ return 0; }
 
 START_TEST (test_cometd_transport)
 {
@@ -101,6 +104,25 @@ START_TEST (test_cometd_new)
 }
 END_TEST
 
+START_TEST (test_cometd_new_connect_message)
+{
+  g_instance = create_cometd();
+
+  cometd_transport transport;
+  transport.name = "test-transport";
+  transport.send = test_transport_send;
+  transport.recv = test_transport_recv;
+
+  g_instance->conn->transport = &transport;
+
+  JsonNode* msg = cometd_new_connect_message(g_instance);
+  JsonObject* obj = json_node_get_object(msg);
+  const gchar* channel = json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
+  fail_unless(strcmp(channel, COMETD_CHANNEL_META_CONNECT) == 0);
+}
+END_TEST
+
+
 START_TEST (test_cometd_create_handshake_req){
   g_instance = create_cometd();
 
@@ -136,6 +158,50 @@ START_TEST (test_cometd_successful_handshake){
 }
 END_TEST
 
+
+static GCond cometd_init_cond;
+static GMutex cometd_init_mutex;
+static gboolean cometd_initialized = FALSE;
+
+gpointer cometd_init_thread(gpointer data){
+  printf("==================== cometd is initializing\n");
+  cometd* instance = (cometd*) data;
+  cometd_init(instance);
+  fail_unless(g_instance->conn->state == COMETD_CONNECTED);
+  printf("cometd is connected");
+
+  g_mutex_lock(&cometd_init_mutex);
+  cometd_initialized = TRUE;
+  g_cond_signal(&cometd_init_cond);
+  g_mutex_unlock(&cometd_init_mutex);
+}
+
+START_TEST (test_cometd_send_and_receive_message){
+  g_instance = create_cometd();
+  cometd_add_listener(g_instance, "/meta/**", inbox_handler);
+  cometd_add_listener(g_instance, "/echo/message/test", inbox_handler);
+
+  GThread* t = g_thread_new("cometd_init thread", &cometd_init_thread, g_instance);
+
+  g_mutex_lock(&cometd_init_mutex);
+  while (cometd_initialized == FALSE)
+    g_cond_wait(&cometd_init_cond, &cometd_init_mutex);
+
+  printf("this is where ill send messages\n");
+
+  //cometd_send(g_instance, "/echo/message/test", create_message_from_json(json_str));
+  //fail_unless(check_inbox_for_message(json_str, 10));
+  //cometd_disconnect(g_instance);
+
+  g_mutex_unlock(&cometd_init_mutex);
+
+  gpointer ret = g_thread_join(t);
+
+  fail();
+
+}
+END_TEST
+
 Suite* cometd_suite (void)
 {
   Suite *s = suite_create ("Cometd");
@@ -145,6 +211,7 @@ Suite* cometd_suite (void)
   tcase_add_checked_fixture (tc_unit, setup, teardown);
   tcase_add_test (tc_unit, test_cometd_default_config);
   tcase_add_test (tc_unit, test_cometd_new);
+  tcase_add_test (tc_unit, test_cometd_new_connect_message);
   tcase_add_test (tc_unit, test_cometd_create_handshake_req);
   tcase_add_test (tc_unit, test_cometd_transport);
   suite_add_tcase (s, tc_unit);
@@ -152,9 +219,10 @@ Suite* cometd_suite (void)
   /* Integration tests that require cometd server dependency */
   TCase *tc_integration = tcase_create ("Client::Integration");
   tcase_add_checked_fixture (tc_integration, setup, teardown);
-  tcase_set_timeout (tc_integration, 100);
+  tcase_set_timeout (tc_integration, 15);
   tcase_add_test (tc_integration, test_cometd_successful_init);
   tcase_add_test (tc_integration, test_cometd_successful_handshake);
+  tcase_add_test (tc_integration, test_cometd_send_and_receive_message);
   suite_add_tcase (s, tc_integration);
 
   return s;

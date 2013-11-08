@@ -17,6 +17,7 @@
 // Connection state
 #define COMETD_DISCONNECTED           0x00000000
 #define COMETD_CONNECTED              0x00000001
+#define COMETD_DISCONNECTING          0x00000010
 
 // Message fields
 #define COMETD_MSG_ID_FIELD           "id"
@@ -35,12 +36,13 @@
 // Macros
 #define JSON_GET_DOUBLE(node)  (node->number_);
 
-typedef int (*cometd_callback)(struct cometd* h, JsonNode* message);
+typedef int       (*cometd_callback)(struct cometd* h, JsonNode* message);
+typedef JsonNode* (*cometd_recv_callback)(struct cometd* h);
 
 typedef struct {
-  char*           name;
-  cometd_callback send;
-  cometd_callback recv;
+  char*                name;
+  cometd_callback      send;
+  cometd_recv_callback recv;
 } cometd_transport;
 
 // connection configuration object
@@ -75,8 +77,9 @@ void            cometd_default_config   (cometd_config* config);
 void            cometd_destroy          (cometd* h);
 
 // bayeux protocol
-int cometd_handshake (const cometd* h, cometd_callback cb);
-int cometd_connect   (const cometd* h, cometd_callback cb);
+int cometd_handshake    (const cometd* h, cometd_callback cb);
+int cometd_connect      (const cometd* h, cometd_callback cb);
+int cometd_add_listener (const cometd* h, const char * channel, cometd_callback cb);
 
 // transports
 int               cometd_register_transport    (cometd_config* h, const cometd_transport* transport);
@@ -85,5 +88,9 @@ cometd_transport* cometd_find_transport        (const cometd_config* h, const ch
 
 // message creation / serialization
 int cometd_create_handshake_req(const cometd* h, JsonNode* message);
+JsonNode* cometd_new_connect_message(const cometd* h);
+
+// debug
+int cometd_debug_handler(const cometd* h, JsonNode* node);
 
 #endif /* COMETD_H */

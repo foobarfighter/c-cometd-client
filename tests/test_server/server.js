@@ -1,6 +1,6 @@
 var Faye   = require('faye')
   , http   = require('http')
-  , bayeux = new Faye.NodeAdapter({mount: '/cometd', timeout: 10});
+  , bayeux = new Faye.NodeAdapter({mount: '/cometd', timeout: 3});
 
 var Inspect = {
   incoming: function (message, callback){

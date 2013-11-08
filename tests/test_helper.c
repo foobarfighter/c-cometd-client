@@ -10,3 +10,6 @@ void await(int result){
   }
 }
 
+int inbox_handler(const cometd* h, JsonNode* node){
+  return 0;
+}

@@ -38,15 +38,27 @@ int
 cometd_init(const cometd* h){
   struct ev_loop *loop = malloc(ev_loop);
 
-  if (cometd_handshake(h, NULL))
+  if (cometd_handshake(h, cometd_debug_handler))
     return 1;
     //return _error(h, "handshake failed: %s", _error_msg(h));
 
-  if (cometd_connect(h, NULL))
-    return 1;
-    //return _error(h, "connect failed: %s", _error_msg(h));
+  _cometd_run_loop(h);
+
 
   return 0;
+}
+
+int
+_cometd_run_loop(const cometd* h){
+  do {
+    JsonNode* node = h->conn->transport->recv(h);
+
+  } while (!(h->conn->state & (COMETD_DISCONNECTING | COMETD_DISCONNECTED)));
+}
+
+//TODO: Should this be some sort of macro? I suck at C
+int cometd_debug_handler(const cometd* h, JsonNode* node){
+  printf("returning some data from somewhere: \n");
 }
 
 int
@@ -284,4 +296,9 @@ cometd_find_transport(const cometd_config* h, const char *name){
   GList* t = g_slist_find_custom(h->transports, name, _find_transport_by_name);
   return (t == NULL) ? NULL : (cometd_transport*) t->data;
 
+}
+
+int
+cometd_add_listener(const cometd* h, const char * channel, cometd_callback cb){
+  return 0;
 }
