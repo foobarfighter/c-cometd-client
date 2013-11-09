@@ -36,8 +36,10 @@
 // Macros
 #define JSON_GET_DOUBLE(node)  (node->number_);
 
-typedef int       (*cometd_callback)(struct cometd* h, JsonNode* message);
-typedef JsonNode* (*cometd_recv_callback)(struct cometd* h);
+struct cometd;
+
+typedef int       (*cometd_callback)(const struct cometd* h, JsonNode* message);
+typedef JsonNode* (*cometd_recv_callback)(const struct cometd* h);
 
 typedef struct {
   char*                name;
@@ -52,7 +54,7 @@ typedef struct {
   int      max_backoff;
   int      max_network_delay;
   int      append_message_type_to_url;
-  GSList*  transports; 
+  GList*   transports; 
 } cometd_config;
 
 // connection state object
@@ -89,8 +91,5 @@ cometd_transport* cometd_find_transport        (const cometd_config* h, const ch
 // message creation / serialization
 int cometd_create_handshake_req(const cometd* h, JsonNode* message);
 JsonNode* cometd_new_connect_message(const cometd* h);
-
-// debug
-int cometd_debug_handler(const cometd* h, JsonNode* node);
 
 #endif /* COMETD_H */

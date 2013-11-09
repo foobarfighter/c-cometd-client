@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <check.h>
 #include <glib.h>
 
@@ -38,7 +39,7 @@ create_cometd(){
 }
 
 int test_transport_send(const cometd* h, JsonNode* node){ return 0; }
-int test_transport_recv(const cometd* h){ return 0; }
+JsonNode* test_transport_recv(const cometd* h){ return 0; }
 
 
 /*
@@ -73,7 +74,7 @@ START_TEST (test_cometd_transport)
   cometd_register_transport(g_config, &transport);
 
   // default transports + test-transport
-  fail_unless(g_slist_length(g_config->transports) == 2);
+  fail_unless(g_list_length(g_config->transports) == 2);
 
   // should not be able to find a transport that doesn't exist
   cometd_transport* nullptr = cometd_find_transport(g_config, "0xdeadbeef");
@@ -131,7 +132,7 @@ START_TEST (test_cometd_create_handshake_req){
   JsonNode* msg = json_node_new(JSON_NODE_OBJECT);
   cometd_create_handshake_req(g_instance, msg);
 
-  JsonNode* obj = json_node_get_object(msg);
+  JsonObject* obj = json_node_get_object(msg);
 
   int id = json_object_get_int_member(obj, COMETD_MSG_ID_FIELD); 
   fail_unless(id == 1);

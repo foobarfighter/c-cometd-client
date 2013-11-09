@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <glib.h>
 #include <json-glib/json-glib.h>
 #include "transport_long_polling.h"
@@ -8,7 +11,7 @@ const char* _lp_send(const cometd* h, JsonNode* node);
 JsonNode*   _poll(const cometd* h);
 
 int
-cometd_transport_long_polling_send(const cometd* h, JsonNode* node)
+cometd_transport_long_polling_send(const struct cometd* h, JsonNode* node)
 {
   const char* raw_response = _lp_send(h, node);
 
@@ -16,7 +19,7 @@ cometd_transport_long_polling_send(const cometd* h, JsonNode* node)
 }
 
 JsonNode*
-cometd_transport_long_polling_recv(const cometd* h){
+cometd_transport_long_polling_recv(const struct cometd* h){
   JsonNode* n = _poll(h);
   return n;
 }

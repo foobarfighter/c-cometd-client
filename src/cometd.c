@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <stddef.h>
 #include <json-glib/json-glib.h>
 
@@ -7,6 +8,8 @@
 #include "cometd.h"
 #include "http.h"
 #include "transport_long_polling.h"
+
+int cometd_debug_handler(const struct cometd*, JsonNode*);
 
 void
 cometd_default_config(cometd_config* config){
@@ -34,9 +37,14 @@ cometd_new(cometd_config* config){
   return h;
 }
 
+//TODO: Should this be some sort of macro? I suck at C
+int cometd_debug_handler(const struct cometd* h, JsonNode* node){
+  //printf("returning some data from somewhere: \n");
+}
+
 int
 cometd_init(const cometd* h){
-  struct ev_loop *loop = malloc(ev_loop);
+  //struct ev_loop *loop = malloc(ev_loop);
 
   if (cometd_handshake(h, cometd_debug_handler))
     return 1;
@@ -56,10 +64,6 @@ _cometd_run_loop(const cometd* h){
   } while (!(h->conn->state & (COMETD_DISCONNECTING | COMETD_DISCONNECTED)));
 }
 
-//TODO: Should this be some sort of macro? I suck at C
-int cometd_debug_handler(const cometd* h, JsonNode* node){
-  printf("returning some data from somewhere: \n");
-}
 
 int
 _negotiate_transport(const cometd* h, JsonObject* obj)
@@ -86,10 +90,10 @@ _negotiate_transport(const cometd* h, JsonObject* obj)
         found = 1;
         break;
       }
-      server_entry = g_slist_next(server_entry);
+      server_entry = g_list_next(server_entry);
     }
 
-    client_entry = g_slist_next(client_entry);
+    client_entry = g_list_next(client_entry);
 
     if (found){ break; }
   }
@@ -100,7 +104,7 @@ _negotiate_transport(const cometd* h, JsonObject* obj)
   return (found == 1) ? 0 : 1;
 }
 
-int
+char*
 _extract_client_id(const cometd* h, JsonObject* node){
   return strncpy(
     h->conn->client_id,
@@ -113,7 +117,7 @@ _extract_client_id(const cometd* h, JsonObject* node){
 void
 _process_handshake(JsonArray *array, guint idx, JsonNode* node, gpointer data)
 {
-  cometd* h = (cometd*) data;
+  const cometd* h = (const cometd*) data;
   JsonObject* obj = json_node_get_object(node);
 
   if (idx == 0) {
@@ -137,7 +141,7 @@ cometd_handshake(const cometd* h, cometd_callback cb){
   gchar* data = json_generator_to_data(gen, &len);
 
   // raw_response is allocated on the heap
-  const char* raw_response = http_json_post(h->config->url, data);
+  char* raw_response = http_json_post(h->config->url, data);
 
   if (raw_response != NULL){
     JsonParser* parser = json_parser_new();
@@ -149,7 +153,7 @@ cometd_handshake(const cometd* h, cometd_callback cb){
     // TODO: assert root is array with len 1
 
     JsonArray* arr = json_node_get_array(root);
-    json_array_foreach_element(arr, _process_handshake, h);
+    json_array_foreach_element(arr, _process_handshake, (cometd*) h);
 
     // TODO
     //if (cometd_get_last_error(h){
@@ -243,13 +247,13 @@ cometd_create_handshake_req(const cometd* h, JsonNode* root){
   json_object_set_object_member(obj, COMETD_MSG_ADVICE_FIELD, advice);
 
   // construct supported transports
-  JsonObject* json_transports = json_array_new();
+  JsonArray* json_transports = json_array_new();
 
   GList* entry = h->config->transports;
   while (entry){
     cometd_transport* t = entry->data;
     json_array_add_string_element(json_transports, t->name);
-    entry = g_slist_next(entry);
+    entry = g_list_next(entry);
   }
   json_object_set_array_member(obj, "supportedConnectionTypes", json_transports);
 
@@ -268,7 +272,7 @@ cometd_register_transport(cometd_config* h, const cometd_transport* transport){
   t->send = transport->send;
   t->recv = transport->recv;
 
-  h->transports = g_slist_prepend(h->transports, t);
+  h->transports = g_list_prepend(h->transports, t);
 
   return 0;
 }
@@ -281,11 +285,11 @@ _find_transport_by_name(gconstpointer a, gconstpointer b){
 
 int
 cometd_unregister_transport(cometd_config* h, const char* name){
-  GList* t = g_slist_find_custom(h->transports, name, _find_transport_by_name);
-  if (t == NULL) return NULL;
+  GList* t = g_list_find_custom(h->transports, name, _find_transport_by_name);
+  if (t == NULL) return 0;
 
   cometd_transport* transport = (cometd_transport*) t->data;
-  h->transports = g_slist_remove(h->transports, transport);
+  h->transports = g_list_remove(h->transports, transport);
   g_free(transport);
 
   return 0;
@@ -293,7 +297,7 @@ cometd_unregister_transport(cometd_config* h, const char* name){
 
 cometd_transport*
 cometd_find_transport(const cometd_config* h, const char *name){
-  GList* t = g_slist_find_custom(h->transports, name, _find_transport_by_name);
+  GList* t = g_list_find_custom(h->transports, name, _find_transport_by_name);
   return (t == NULL) ? NULL : (cometd_transport*) t->data;
 
 }
