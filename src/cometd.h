@@ -33,13 +33,13 @@
 #define COMETD_CHANNEL_META_UNSUBSCRIBE "/meta/unsubscribe"
 #define COMETD_CHANNEL_META_DISCONNECT  "/meta/disconnect"
 
-// Macros
-#define JSON_GET_DOUBLE(node)  (node->number_);
+// Forward declaration stuff
+struct _cometd;
+typedef struct _cometd cometd;
 
-struct cometd;
-
-typedef int       (*cometd_callback)(const struct cometd* h, JsonNode* message);
-typedef JsonNode* (*cometd_recv_callback)(const struct cometd* h);
+// Transport callback functions
+typedef int       (*cometd_callback)(const cometd* h, JsonNode* message);
+typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
 
 typedef struct {
   char*                name;
@@ -68,10 +68,10 @@ typedef struct {
 } cometd_conn;
 
 // cometd handle
-typedef struct {
+struct _cometd {
   cometd_conn* conn;
   cometd_config* config;
-} cometd;
+};
 
 // configuration and lifecycle
 cometd*         cometd_new              (cometd_config* config);

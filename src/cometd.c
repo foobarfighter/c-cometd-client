@@ -9,7 +9,7 @@
 #include "http.h"
 #include "transport_long_polling.h"
 
-int cometd_debug_handler(const struct cometd*, JsonNode*);
+int cometd_debug_handler(const cometd*, JsonNode*);
 
 void
 cometd_default_config(cometd_config* config){
@@ -38,7 +38,7 @@ cometd_new(cometd_config* config){
 }
 
 //TODO: Should this be some sort of macro? I suck at C
-int cometd_debug_handler(const struct cometd* h, JsonNode* node){
+int cometd_debug_handler(const cometd* h, JsonNode* node){
   //printf("returning some data from somewhere: \n");
 }
 
