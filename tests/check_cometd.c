@@ -2,14 +2,35 @@
 #include <stdio.h>
 #include <check.h>
 #include <glib.h>
+#include <signal.h>
 
-#include "../src/cometd.h"
-#include "../tests/test_helper.h"
+#include "cometd.h"
+#include "transport_long_polling.h"
+#include "test_helper.h"
 
 #define TEST_SERVER_URL "http://localhost:8089/cometd"
 
 cometd_config* g_config   = NULL;
 cometd*        g_instance = NULL;
+
+int       test_transport_send(const cometd* h, JsonNode* node);
+JsonNode* test_transport_recv(const cometd* h);
+
+static const cometd_transport TEST_TRANSPORT = {
+  "test-transport",
+   test_transport_send,
+   test_transport_recv
+};
+
+int test_transport_send(const cometd* h, JsonNode* node)
+{
+  return 0;
+}
+
+JsonNode* test_transport_recv(const cometd* h)
+{
+  return 0;
+}
 
 void setup (void)
 {
@@ -38,8 +59,6 @@ create_cometd(){
   return cometd_new(g_config);
 }
 
-int test_transport_send(const cometd* h, JsonNode* node){ return 0; }
-JsonNode* test_transport_recv(const cometd* h){ return 0; }
 
 
 /*
@@ -65,13 +84,8 @@ START_TEST (test_cometd_transport)
   g_config = (cometd_config*) malloc(sizeof(cometd_config));
   cometd_default_config(g_config);
 
-  cometd_transport transport;
-  transport.name = "test-transport";
-  transport.send = test_transport_send;
-  transport.recv = test_transport_recv;
-
   // should have default transports + test-transport
-  cometd_register_transport(g_config, &transport);
+  cometd_register_transport(g_config, &TEST_TRANSPORT);
 
   // default transports + test-transport
   fail_unless(g_list_length(g_config->transports) == 2);
@@ -109,12 +123,7 @@ START_TEST (test_cometd_new_connect_message)
 {
   g_instance = create_cometd();
 
-  cometd_transport transport;
-  transport.name = "test-transport";
-  transport.send = test_transport_send;
-  transport.recv = test_transport_recv;
-
-  g_instance->conn->transport = &transport;
+  g_instance->conn->transport = &TEST_TRANSPORT;
 
   JsonNode* msg = cometd_new_connect_message(g_instance);
   JsonObject* obj = json_node_get_object(msg);
@@ -124,17 +133,17 @@ START_TEST (test_cometd_new_connect_message)
 END_TEST
 
 
-START_TEST (test_cometd_create_handshake_req){
+START_TEST (test_cometd_new_handshake_message){
   g_instance = create_cometd();
 
   long seed = g_instance->conn->_msg_id_seed;
 
-  JsonNode* msg = json_node_new(JSON_NODE_OBJECT);
-  cometd_create_handshake_req(g_instance, msg);
-
+  JsonNode* msg = cometd_new_handshake_message(g_instance);
   JsonObject* obj = json_node_get_object(msg);
+  int id = json_object_get_int_member(obj, COMETD_MSG_ID_FIELD);
 
-  int id = json_object_get_int_member(obj, COMETD_MSG_ID_FIELD); 
+  json_node_free(msg);
+
   fail_unless(id == 1);
 }
 END_TEST
@@ -159,17 +168,35 @@ START_TEST (test_cometd_successful_handshake){
 }
 END_TEST
 
+START_TEST (test_cometd_unsuccessful_handshake_without_advice)
+{
+  g_instance = create_cometd();
+
+  ck_assert_int_eq(0, cometd_unregister_transport(g_instance->config, "long-polling"));
+  ck_assert_int_eq(0, g_list_length(g_instance->config->transports));
+  ck_assert_int_eq(0, cometd_register_transport(g_instance->config, &TEST_TRANSPORT));
+
+  ck_assert_int_eq(0, cometd_handshake(g_instance, NULL));
+}
+END_TEST
+
+START_TEST (test_cometd_unsuccessful_handshake_with_advice)
+{
+  //g_instance = create_cometd();
+
+  //int code = cometd_handshake(g_instance, logger_handler)
+}
+END_TEST
+
 
 static GCond cometd_init_cond;
 static GMutex cometd_init_mutex;
 static gboolean cometd_initialized = FALSE;
 
 gpointer cometd_init_thread(gpointer data){
-  printf("==================== cometd is initializing\n");
   cometd* instance = (cometd*) data;
   cometd_init(instance);
   fail_unless(g_instance->conn->state == COMETD_CONNECTED);
-  printf("cometd is connected");
 
   g_mutex_lock(&cometd_init_mutex);
   cometd_initialized = TRUE;
@@ -213,7 +240,7 @@ Suite* cometd_suite (void)
   tcase_add_test (tc_unit, test_cometd_default_config);
   tcase_add_test (tc_unit, test_cometd_new);
   tcase_add_test (tc_unit, test_cometd_new_connect_message);
-  tcase_add_test (tc_unit, test_cometd_create_handshake_req);
+  tcase_add_test (tc_unit, test_cometd_new_handshake_message);
   tcase_add_test (tc_unit, test_cometd_transport);
   suite_add_tcase (s, tc_unit);
 
@@ -221,9 +248,11 @@ Suite* cometd_suite (void)
   TCase *tc_integration = tcase_create ("Client::Integration");
   tcase_add_checked_fixture (tc_integration, setup, teardown);
   tcase_set_timeout (tc_integration, 15);
-  tcase_add_test (tc_integration, test_cometd_successful_init);
+  //tcase_add_test (tc_integration, test_cometd_successful_init);
   tcase_add_test (tc_integration, test_cometd_successful_handshake);
-  tcase_add_test (tc_integration, test_cometd_send_and_receive_message);
+  //tcase_add_test (tc_integration, test_cometd_unsuccessful_handshake_with_advice);
+  //tcase_add_test (tc_integration, test_cometd_unsuccessful_handshake_without_advice);
+  //tcase_add_test (tc_integration, test_cometd_send_and_receive_message);
   suite_add_tcase (s, tc_integration);
 
   return s;
@@ -232,6 +261,8 @@ Suite* cometd_suite (void)
 int
 main (void)
 {
+  signal(SIGSEGV, error_handler);
+
   int number_failed;
   Suite *s = cometd_suite ();
   SRunner *sr = srunner_create (s);

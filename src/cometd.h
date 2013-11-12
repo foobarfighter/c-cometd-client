@@ -33,6 +33,9 @@
 #define COMETD_CHANNEL_META_UNSUBSCRIBE "/meta/unsubscribe"
 #define COMETD_CHANNEL_META_DISCONNECT  "/meta/disconnect"
 
+// Other
+#define COMETD_MAX_CLIENT_ID_LEN 128
+
 // Forward declaration stuff
 struct _cometd;
 typedef struct _cometd cometd;
@@ -57,9 +60,6 @@ typedef struct {
   GList*   transports; 
 } cometd_config;
 
-// connection state object
-#define COMETD_MAX_CLIENT_ID_LEN 128
-
 typedef struct {
   int                            state;
   long                           _msg_id_seed;
@@ -73,23 +73,36 @@ struct _cometd {
   cometd_config* config;
 };
 
+typedef struct _cometd_subscription {
+  long id;
+} cometd_subscription;
+
 // configuration and lifecycle
 cometd*         cometd_new              (cometd_config* config);
 void            cometd_default_config   (cometd_config* config);
 void            cometd_destroy          (cometd* h);
 
+// message creation / serialization
+JsonNode* cometd_new_connect_message  (const cometd* h);
+JsonNode* cometd_new_handshake_message(const cometd* h);
+
 // bayeux protocol
 int cometd_handshake    (const cometd* h, cometd_callback cb);
 int cometd_connect      (const cometd* h, cometd_callback cb);
-int cometd_add_listener (const cometd* h, const char * channel, cometd_callback cb);
 
 // transports
 int               cometd_register_transport    (cometd_config* h, const cometd_transport* transport);
 int               cometd_unregister_transport  (cometd_config* h, const char* name);
 cometd_transport* cometd_find_transport        (const cometd_config* h, const char *name);
 
-// message creation / serialization
-int cometd_create_handshake_req(const cometd* h, JsonNode* message);
-JsonNode* cometd_new_connect_message(const cometd* h);
+// events
+cometd_subscription* cometd_add_listener(const cometd* h, const char * channel, cometd_callback cb);
+//int                  cometd_remove_listener(const cometd* h, cometd_subscription* subscription);
+//int                  cometd_fire_listeners(const cometd* h, const char* channel);
+
+// processing
+void cometd_process_payload  (const cometd* h, JsonNode* root);
+void cometd_process_message  (const cometd* h, JsonObject* message);
+void cometd_process_handshake(const cometd* h, JsonObject* message);
 
 #endif /* COMETD_H */

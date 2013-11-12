@@ -7,5 +7,6 @@
 
 int inbox_handler(const cometd* h, JsonNode* node);
 void await(int result);
+void error_handler(int sig);
 
 #endif // TEST_HELPER_H
