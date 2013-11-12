@@ -1,6 +1,7 @@
 #include <check.h>
 #include <execinfo.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "../tests/test_helper.h"
 
 void

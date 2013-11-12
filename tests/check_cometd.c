@@ -16,7 +16,7 @@ cometd*        g_instance = NULL;
 int       test_transport_send(const cometd* h, JsonNode* node);
 JsonNode* test_transport_recv(const cometd* h);
 
-static const cometd_transport TEST_TRANSPORT = {
+static cometd_transport TEST_TRANSPORT = {
   "test-transport",
    test_transport_send,
    test_transport_recv
@@ -115,6 +115,7 @@ START_TEST (test_cometd_new)
   cometd* h = cometd_new(&config);
   fail_unless(h->conn->state == COMETD_DISCONNECTED);
   fail_unless(h->config == &config);
+  ck_assert_int_eq(COMETD_SUCCESS, h->last_error->code);
   cometd_destroy(h);
 }
 END_TEST
@@ -148,17 +149,36 @@ START_TEST (test_cometd_new_handshake_message){
 }
 END_TEST
 
+START_TEST (test_cometd_error)
+{
+  g_instance = create_cometd();
+
+  char* message = "hey now";
+  int code = 1234;
+  int ret = cometd_error(g_instance, 1234, message);
+
+  ck_assert_int_eq(code, ret);
+
+  cometd_error_st* error = cometd_last_error(g_instance);
+
+  ck_assert_int_eq(code, error->code);
+  ck_assert_str_eq(message, error->message);
+}
+END_TEST
+
 /*
  *  Integration Suite
  */
-START_TEST (test_cometd_successful_init){
+START_TEST (test_cometd_successful_init)
+{
   g_instance = create_cometd();
   cometd_init(g_instance);
   fail_unless(g_instance->conn->state == COMETD_CONNECTED);
 }
 END_TEST
 
-START_TEST (test_cometd_successful_handshake){
+START_TEST (test_cometd_handshake_success)
+{
   g_instance = create_cometd();
 
   int code = cometd_handshake(g_instance, NULL);
@@ -168,25 +188,31 @@ START_TEST (test_cometd_successful_handshake){
 }
 END_TEST
 
-START_TEST (test_cometd_unsuccessful_handshake_without_advice)
-{
-  g_instance = create_cometd();
-
-  ck_assert_int_eq(0, cometd_unregister_transport(g_instance->config, "long-polling"));
-  ck_assert_int_eq(0, g_list_length(g_instance->config->transports));
-  ck_assert_int_eq(0, cometd_register_transport(g_instance->config, &TEST_TRANSPORT));
-
-  ck_assert_int_eq(0, cometd_handshake(g_instance, NULL));
-}
-END_TEST
-
-START_TEST (test_cometd_unsuccessful_handshake_with_advice)
+START_TEST (test_cometd_handshake_failed_http)
 {
   //g_instance = create_cometd();
-
-  //int code = cometd_handshake(g_instance, logger_handler)
 }
 END_TEST
+
+//START_TEST (test_cometd_unsuccessful_handshake_without_advice)
+//{
+//  g_instance = create_cometd();
+//
+//  ck_assert_int_eq(0, cometd_unregister_transport(g_instance->config, "long-polling"));
+//  ck_assert_int_eq(0, g_list_length(g_instance->config->transports));
+//  ck_assert_int_eq(0, cometd_register_transport(g_instance->config, &TEST_TRANSPORT));
+//
+//  ck_assert_int_eq(0, cometd_handshake(g_instance, NULL));
+//}
+//END_TEST
+//
+//START_TEST (test_cometd_unsuccessful_handshake_with_advice)
+//{
+//  //g_instance = create_cometd();
+//
+//  //int code = cometd_handshake(g_instance, logger_handler)
+//}
+//END_TEST
 
 
 static GCond cometd_init_cond;
@@ -242,6 +268,7 @@ Suite* cometd_suite (void)
   tcase_add_test (tc_unit, test_cometd_new_connect_message);
   tcase_add_test (tc_unit, test_cometd_new_handshake_message);
   tcase_add_test (tc_unit, test_cometd_transport);
+  tcase_add_test (tc_unit, test_cometd_error);
   suite_add_tcase (s, tc_unit);
 
   /* Integration tests that require cometd server dependency */
@@ -249,7 +276,8 @@ Suite* cometd_suite (void)
   tcase_add_checked_fixture (tc_integration, setup, teardown);
   tcase_set_timeout (tc_integration, 15);
   //tcase_add_test (tc_integration, test_cometd_successful_init);
-  tcase_add_test (tc_integration, test_cometd_successful_handshake);
+  tcase_add_test (tc_integration, test_cometd_handshake_success);
+  tcase_add_test (tc_integration, test_cometd_handshake_failed_http);
   //tcase_add_test (tc_integration, test_cometd_unsuccessful_handshake_with_advice);
   //tcase_add_test (tc_integration, test_cometd_unsuccessful_handshake_without_advice);
   //tcase_add_test (tc_integration, test_cometd_send_and_receive_message);

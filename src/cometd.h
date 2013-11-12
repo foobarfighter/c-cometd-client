@@ -33,6 +33,11 @@
 #define COMETD_CHANNEL_META_UNSUBSCRIBE "/meta/unsubscribe"
 #define COMETD_CHANNEL_META_DISCONNECT  "/meta/disconnect"
 
+// Errors
+#define COMETD_SUCCESS          0
+#define COMETD_ERROR_JSON       1
+#define COMETD_ERROR_HANDSHAKE  2
+
 // Other
 #define COMETD_MAX_CLIENT_ID_LEN 128
 
@@ -67,15 +72,22 @@ typedef struct {
   char client_id[COMETD_MAX_CLIENT_ID_LEN];
 } cometd_conn;
 
+typedef struct _cometd_error_st {
+  int   code;
+  char* message;
+} cometd_error_st;
+
 // cometd handle
 struct _cometd {
-  cometd_conn* conn;
-  cometd_config* config;
+  cometd_conn*     conn;
+  cometd_config*   config;
+  cometd_error_st* last_error;
 };
 
 typedef struct _cometd_subscription {
   long id;
 } cometd_subscription;
+
 
 // configuration and lifecycle
 cometd*         cometd_new              (cometd_config* config);
@@ -104,5 +116,9 @@ cometd_subscription* cometd_add_listener(const cometd* h, const char * channel, 
 void cometd_process_payload  (const cometd* h, JsonNode* root);
 void cometd_process_message  (const cometd* h, JsonObject* message);
 void cometd_process_handshake(const cometd* h, JsonObject* message);
+
+// other
+int              cometd_error(const cometd* h, int code, char* message);
+cometd_error_st* cometd_last_error(const cometd* h);
 
 #endif /* COMETD_H */

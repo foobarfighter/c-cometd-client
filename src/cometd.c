@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <stddef.h>
 #include <json-glib/json-glib.h>
@@ -35,8 +36,13 @@ cometd_new(cometd_config* config){
   conn->state = COMETD_DISCONNECTED;
   conn->_msg_id_seed = 0;
 
+  cometd_error_st* error = malloc(sizeof(cometd_error_st));
+  error->code = COMETD_SUCCESS;
+  error->message = NULL;;
+
   h->conn         = conn;
   h->config       = config;
+  h->last_error   = error;
 
   return h;
 }
@@ -121,20 +127,47 @@ int
 cometd_handshake(const cometd* h, cometd_callback callback)
 {
   JsonNode* handshake = cometd_new_handshake_message(h);
-  gchar* data         = cometd_json_node2str(handshake);
-  char* resp          = http_json_post(h->config->url, data);
+  gchar*    data      = cometd_json_node2str(handshake);
 
-  if (resp != NULL) {
-    JsonNode* payload = cometd_json_str2node(resp);
-    cometd_process_payload(h, payload);
-    json_node_free(payload);
-    free(resp);
+  if (data == NULL) {
+    return cometd_error(h, COMETD_ERROR_JSON, "could not serialize json");
   }
 
   json_node_free(handshake);
+
+  char* resp = http_json_post(h->config->url, data);
   g_free(data);
 
-  return 0;
+  if (resp != NULL) {
+    JsonNode* payload = cometd_json_str2node(resp);
+    free(resp);
+
+    if (payload != NULL) {
+      cometd_process_payload(h, payload);
+      json_node_free(payload);
+    } else {
+      return cometd_error(h, COMETD_ERROR_JSON, "could not de-serialize json");
+    }
+  } else {
+    return cometd_error(h, COMETD_ERROR_HANDSHAKE, "could not handshake");
+  }
+  
+  return COMETD_SUCCESS;
+}
+
+int
+cometd_error(const cometd* h, int code, char* message)
+{
+  printf("%d: %s\n", code, message);
+  h->last_error->code = code;
+  h->last_error->message = message;
+  return code;
+}
+
+cometd_error_st*
+cometd_last_error(const cometd* h)
+{
+  return h->last_error;
 }
 
 void
