@@ -8,7 +8,8 @@
 #include "transport_long_polling.h"
 #include "test_helper.h"
 
-#define TEST_SERVER_URL "http://localhost:8089/cometd"
+#define TEST_SERVER_URL   "http://localhost:8089/cometd"
+#define TEST_BAD_JSON_URL "http://localhost:8090/bad_json"
 
 cometd_config* g_config   = NULL;
 cometd*        g_instance = NULL;
@@ -73,8 +74,9 @@ START_TEST (test_cometd_default_config)
 
   config.url = actual_url;
 
-  fail_unless(strncmp(config.url, actual_url, sizeof(actual_url)) == 0);
-  fail_unless(config.backoff_increment == DEFAULT_BACKOFF_INCREMENT);
+  ck_assert_str_eq(actual_url, config.url);
+  ck_assert_int_eq(DEFAULT_BACKOFF_INCREMENT, config.backoff_increment);
+  ck_assert_int_eq(DEFAULT_REQUEST_TIMEOUT, config.request_timeout);
   fail_if(cometd_find_transport(&config, "long-polling") == NULL);
 }
 END_TEST
@@ -133,7 +135,6 @@ START_TEST (test_cometd_new_connect_message)
 }
 END_TEST
 
-
 START_TEST (test_cometd_new_handshake_message){
   g_instance = create_cometd();
 
@@ -190,7 +191,26 @@ END_TEST
 
 START_TEST (test_cometd_handshake_failed_http)
 {
-  //g_instance = create_cometd();
+  g_instance = create_cometd();
+  g_instance->config->url = "http://example.com/server/does/not/exist";
+
+  int code = cometd_handshake(g_instance, NULL);
+
+  ck_assert_int_eq(COMETD_ERROR_HANDSHAKE, code); 
+  ck_assert_int_eq(COMETD_ERROR_HANDSHAKE, cometd_last_error(g_instance)->code); 
+}
+END_TEST
+
+START_TEST (test_cometd_handshake_failed_json)
+{
+  g_instance = create_cometd();
+  g_instance->config->url = TEST_BAD_JSON_URL;
+  g_instance->config->request_timeout = 1000;
+
+  int code = cometd_handshake(g_instance, NULL);
+
+  ck_assert_int_eq(COMETD_ERROR_JSON, code); 
+  ck_assert_int_eq(COMETD_ERROR_JSON, cometd_last_error(g_instance)->code); 
 }
 END_TEST
 
@@ -278,9 +298,7 @@ Suite* cometd_suite (void)
   //tcase_add_test (tc_integration, test_cometd_successful_init);
   tcase_add_test (tc_integration, test_cometd_handshake_success);
   tcase_add_test (tc_integration, test_cometd_handshake_failed_http);
-  //tcase_add_test (tc_integration, test_cometd_unsuccessful_handshake_with_advice);
-  //tcase_add_test (tc_integration, test_cometd_unsuccessful_handshake_without_advice);
-  //tcase_add_test (tc_integration, test_cometd_send_and_receive_message);
+  tcase_add_test (tc_integration, test_cometd_handshake_failed_json);
   suite_add_tcase (s, tc_integration);
 
   return s;

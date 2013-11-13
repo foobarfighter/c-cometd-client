@@ -1,0 +1,18 @@
+{
+  "name": "test_server",
+  "description": "Test server for libcometd",
+  "version": "0.0.1",
+  "author": "Bob Remeika",
+  "homepage": "http://www.bobremeika.com",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+  },
+  "dependencies": {
+    "faye"   : "= 1.0.0",
+    "express": "= 3.4.4"
+  },
+  "devDependencies": {
+  }
+}

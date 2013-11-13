@@ -13,6 +13,7 @@
 #define DEFAULT_MAX_BACKOFF           1000
 #define DEFAULT_MAX_NETWORK_DELAY     1000
 #define DEFAULT_APPEND_MESSAGE_TYPE   1
+#define DEFAULT_REQUEST_TIMEOUT       30000
 
 // Connection state
 #define COMETD_DISCONNECTED           0x00000000
@@ -61,6 +62,7 @@ typedef struct {
   int      backoff_increment;
   int      max_backoff;
   int      max_network_delay;
+  int      request_timeout;
   int      append_message_type_to_url;
   GList*   transports; 
 } cometd_config;

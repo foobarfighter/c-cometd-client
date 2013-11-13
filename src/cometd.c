@@ -20,6 +20,7 @@ cometd_default_config(cometd_config* config){
   config->backoff_increment = DEFAULT_BACKOFF_INCREMENT;
   config->max_backoff       = DEFAULT_MAX_BACKOFF;
   config->max_network_delay = DEFAULT_MAX_NETWORK_DELAY;
+  config->request_timeout   = DEFAULT_REQUEST_TIMEOUT;
   config->append_message_type_to_url = DEFAULT_APPEND_MESSAGE_TYPE;
   config->transports = NULL;
 
