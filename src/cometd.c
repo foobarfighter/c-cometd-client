@@ -136,7 +136,7 @@ cometd_handshake(const cometd* h, cometd_callback callback)
 
   json_node_free(handshake);
 
-  char* resp = http_json_post(h->config->url, data);
+  char* resp = http_json_post(h->config->url, data, h->config->request_timeout);
   g_free(data);
 
   if (resp != NULL) {

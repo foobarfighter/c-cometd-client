@@ -66,6 +66,6 @@ _lp_send(const cometd* h, JsonNode* node){
 
   printf("=====_sending\n");
 
-  return http_json_post(h->config->url, data);
+  return http_json_post(h->config->url, data, h->config->request_timeout);
 }
 

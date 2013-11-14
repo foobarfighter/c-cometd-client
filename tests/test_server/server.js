@@ -34,12 +34,11 @@ app.post('/bad_json', function (req, res){
   res.send('{ this_is_messed_up_json }');
 });
 
-app.get('/long_request', function (req, res, next){
-  var tic = new Date().getTime();
+app.post('/long_request', function (req, res, next){
   setTimeout(function (){
     res.setHeader('Content-Type', 'application/json');
-    res.send('{ "request-time": ' + (new Date().getTime() - tic) + '}');
-  }, 50000);
+    res.send('[]');
+  }, 30000);
 });
 
 app.get('/heynow', function (req, res, next){

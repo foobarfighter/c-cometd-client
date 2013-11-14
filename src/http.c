@@ -34,7 +34,7 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
  * the calling function.
  */
 char*
-http_json_post(const char *url, const char* data){
+http_json_post(const char *url, const char* data, int timeout){
   struct curl_slist *header_chunk = NULL;
 
   header_chunk = curl_slist_append(header_chunk, "Content-Type: application/json");
@@ -44,6 +44,7 @@ http_json_post(const char *url, const char* data){
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_chunk);
   curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(data));
   curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+  curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout);
 
   struct MemoryStruct body_chunk;
   body_chunk.memory = malloc(1);  /* will be grown as needed by the realloc above */ 

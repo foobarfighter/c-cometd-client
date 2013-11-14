@@ -8,8 +8,10 @@
 #include "transport_long_polling.h"
 #include "test_helper.h"
 
-#define TEST_SERVER_URL   "http://localhost:8089/cometd"
-#define TEST_BAD_JSON_URL "http://localhost:8090/bad_json"
+#define TEST_SERVER_URL       "http://localhost:8089/cometd"
+#define TEST_BAD_JSON_URL     "http://localhost:8090/bad_json"
+#define TEST_LONG_REQUEST_URL "http://localhost:8090/long_request"
+#define TEST_LONG_REQUEST_TIMEOUT 20
 
 cometd_config* g_config   = NULL;
 cometd*        g_instance = NULL;
@@ -192,12 +194,21 @@ END_TEST
 START_TEST (test_cometd_handshake_failed_http)
 {
   g_instance = create_cometd();
-  g_instance->config->url = "http://example.com/server/does/not/exist";
+  g_instance->config->url = "http://localhost/service/does/not/exist";
 
   int code = cometd_handshake(g_instance, NULL);
-
   ck_assert_int_eq(COMETD_ERROR_HANDSHAKE, code); 
-  ck_assert_int_eq(COMETD_ERROR_HANDSHAKE, cometd_last_error(g_instance)->code); 
+}
+END_TEST
+
+START_TEST (test_cometd_handshake_failed_http_timeout)
+{
+  g_instance = create_cometd();
+  g_instance->config->url = TEST_LONG_REQUEST_URL;
+  g_instance->config->request_timeout = TEST_LONG_REQUEST_TIMEOUT;
+
+  int code = cometd_handshake(g_instance, NULL);
+  ck_assert_int_eq(COMETD_ERROR_HANDSHAKE, code); 
 }
 END_TEST
 
@@ -208,9 +219,7 @@ START_TEST (test_cometd_handshake_failed_json)
   g_instance->config->request_timeout = 1000;
 
   int code = cometd_handshake(g_instance, NULL);
-
   ck_assert_int_eq(COMETD_ERROR_JSON, code); 
-  ck_assert_int_eq(COMETD_ERROR_JSON, cometd_last_error(g_instance)->code); 
 }
 END_TEST
 
@@ -299,6 +308,7 @@ Suite* cometd_suite (void)
   tcase_add_test (tc_integration, test_cometd_handshake_success);
   tcase_add_test (tc_integration, test_cometd_handshake_failed_http);
   tcase_add_test (tc_integration, test_cometd_handshake_failed_json);
+  tcase_add_test (tc_integration, test_cometd_handshake_failed_http_timeout);
   suite_add_tcase (s, tc_integration);
 
   return s;
