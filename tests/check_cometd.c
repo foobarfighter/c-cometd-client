@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <signal.h>
 
+#include "check_cometd.h"
 #include "cometd.h"
 #include "transport_long_polling.h"
 #include "test_helper.h"
@@ -285,7 +286,7 @@ START_TEST (test_cometd_send_and_receive_message){
 }
 END_TEST
 
-Suite* cometd_suite (void)
+Suite* make_cometd_unit_suite (void)
 {
   Suite *s = suite_create ("Cometd");
 
@@ -314,16 +315,3 @@ Suite* cometd_suite (void)
   return s;
 }
 
-int
-main (void)
-{
-  signal(SIGSEGV, error_handler);
-
-  int number_failed;
-  Suite *s = cometd_suite ();
-  SRunner *sr = srunner_create (s);
-  srunner_run_all (sr, CK_NORMAL);
-  number_failed = srunner_ntests_failed (sr);
-  srunner_free (sr);
-  return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
-}
