@@ -5,6 +5,11 @@
 #include <json-glib/json-glib.h>
 #include "cometd.h"
 
+#define TEST_SERVER_URL            "http://localhost:8089/cometd"
+#define TEST_BAD_JSON_URL          "http://localhost:8090/bad_json"
+#define TEST_LONG_REQUEST_URL      "http://localhost:8090/long_request"
+#define TEST_LONG_REQUEST_TIMEOUT  20
+
 int inbox_handler(const cometd* h, JsonNode* node);
 void await(int result);
 

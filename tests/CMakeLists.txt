@@ -4,6 +4,7 @@ include_directories(. ../src)
 
 add_executable(check_cometd check_cometd_main.c
                             check_cometd.c
+                            check_cometd_integration.c
                             check_http.c
                             test_helper.c)
 
