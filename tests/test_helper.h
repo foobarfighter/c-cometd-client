@@ -8,6 +8,8 @@
 #define TEST_SERVER_URL            "http://localhost:8089/cometd"
 #define TEST_BAD_JSON_URL          "http://localhost:8090/bad_json"
 #define TEST_LONG_REQUEST_URL      "http://localhost:8090/long_request"
+#define TEST_ERROR_CODE_URL        "http://localhost:8090/echo_code?code=500"
+#define TEST_SUCCESS_CODE_URL      "http://localhost:8090/echo_code?code=200"
 #define TEST_LONG_REQUEST_TIMEOUT  20
 
 int inbox_handler(const cometd* h, JsonNode* node);

@@ -1,24 +1,24 @@
 #include "http.h"
+#include "http_parser.h"
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
 
-struct MemoryStruct {
+typedef struct _MemoryStruct {
   char *memory;
   size_t size;
-};
- 
+} MemoryStruct;
+
 static size_t
 WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
   size_t realsize = size * nmemb;
-  struct MemoryStruct *mem = (struct MemoryStruct *)userp;
+  MemoryStruct *mem = (MemoryStruct *)userp;
  
   mem->memory = realloc(mem->memory, mem->size + realsize + 1);
   if (mem->memory == NULL) {
-    /* out of memory! */ 
-    printf("not enough memory (realloc returned NULL)\n");
-    //exit(EXIT_FAILURE);
+    // printf("not enough memory (realloc returned NULL)\n");
+    // TODO: how should I handle this?
   }
  
   memcpy(&(mem->memory[mem->size]), contents, realsize);
@@ -28,6 +28,30 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
   return realsize;
 }
 
+static http_parser_settings settings_null =
+{
+  .on_message_begin = 0,
+  .on_header_field = 0,
+  .on_header_value = 0,
+  .on_url = 0,
+  .on_body = 0,
+  .on_headers_complete = 0,
+  .on_message_complete = 0
+};
+
+int
+http_valid_response(const char* body, size_t size)
+{
+  http_parser parser;
+
+  http_parser_init(&parser, HTTP_RESPONSE);
+  http_parser_execute(&parser,
+                      &settings_null,
+                      body,
+                      size);
+
+  return parser.status_code >= 200 && parser.status_code <= 299;
+}
 
 /*
  * Returns a string of the http body, the buffer should be free'd by
@@ -37,7 +61,8 @@ char*
 http_json_post(const char *url, const char* data, int timeout){
   struct curl_slist *header_chunk = NULL;
 
-  header_chunk = curl_slist_append(header_chunk, "Content-Type: application/json");
+  header_chunk = curl_slist_append(header_chunk,
+                                   "Content-Type: application/json");
 
   CURL* curl = curl_easy_init();
   curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -46,15 +71,23 @@ http_json_post(const char *url, const char* data, int timeout){
   curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
   curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout);
 
-  struct MemoryStruct body_chunk;
-  body_chunk.memory = malloc(1);  /* will be grown as needed by the realloc above */ 
-  body_chunk.size   = 0;          /* no data at this point */
+  MemoryStruct body;
+  /* will be grown as needed by the realloc above */ 
+  body.memory = malloc(1);
+  /* no data at this point */
+  body.size   = 0;
+
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&body_chunk);
+  curl_easy_setopt(curl, CURLOPT_HEADER, 1);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &body);
 
   CURLcode res = curl_easy_perform(curl);
 
-  char* ret = (res == CURLE_OK) ? body_chunk.memory : NULL;
+  char* ret = NULL;
+
+  if (res == CURLE_OK && http_valid_response(body.memory, body.size)){
+    ret = body.memory;
+  }
 
   curl_easy_cleanup(curl);
 

@@ -41,6 +41,12 @@ app.post('/long_request', function (req, res, next){
   }, 30000);
 });
 
+app.post('/echo_code', function (req, res, next){
+  res.statusCode = req.query.code;
+  res.send('echo');
+});
+
+
 app.get('/heynow', function (req, res, next){
   res.send('hey now');
 });
