@@ -152,14 +152,10 @@ cometd_handshake(const cometd* h, cometd_callback callback)
 
   cometd_process_payload(h, payload);
   
-free_payload:
-  json_node_free(payload);
-free_resp:
-  free(resp);
-free_data:
-  g_free(data);
-free_handshake:
-  json_node_free(handshake);
+free_payload:   json_node_free(payload);
+free_resp:      free(resp);
+free_data:      g_free(data);
+free_handshake: json_node_free(handshake);
 
   return error_code;
 }
