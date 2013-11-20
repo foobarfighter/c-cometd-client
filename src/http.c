@@ -1,5 +1,4 @@
 #include "http.h"
-#include "http_parser.h"
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
@@ -31,31 +30,6 @@ WriteMemoryCallback(void *contents,
   return realsize;
 }
 
-static http_parser_settings settings_null =
-{
-  .on_message_begin = 0,
-  .on_header_field = 0,
-  .on_header_value = 0,
-  .on_url = 0,
-  .on_body = 0,
-  .on_headers_complete = 0,
-  .on_message_complete = 0
-};
-
-int
-http_valid_response(const char* body, size_t size)
-{
-  http_parser parser;
-
-  http_parser_init(&parser, HTTP_RESPONSE);
-  http_parser_execute(&parser,
-                      &settings_null,
-                      body,
-                      size);
-
-  return parser.status_code >= 200 && parser.status_code <= 299;
-}
-
 /*
  * Returns a string of the http body, the buffer should be free'd by
  * the calling function.
@@ -63,6 +37,7 @@ http_valid_response(const char* body, size_t size)
 char*
 http_json_post(const char *url, const char* data, int timeout){
   char* ret = NULL;
+  unsigned int http_error = 1;
 
   struct curl_slist *header_chunk = NULL;
 
@@ -84,23 +59,36 @@ http_json_post(const char *url, const char* data, int timeout){
   body.memory = malloc(1);
   body.size   = 0;
 
+  // couldn't malloc
   if (body.memory == NULL)
     goto cleanup_curl;
 
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-  curl_easy_setopt(curl, CURLOPT_HEADER, 1);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &body);
 
   CURLcode res = curl_easy_perform(curl);
 
-  if (res == CURLE_OK && http_valid_response(body.memory, body.size)){
-    ret = body.memory;
-  } else {
+  // make sure that the request/response went ok
+  if (res == CURLE_OK){
+    long http_code;
+
+    // validate the http response
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    if (http_code >= 200 && http_code <= 299){
+      http_error = 0;
+    }
+  }
+
+  if (http_error){
     free(body.memory);
+  } else {
+    ret = body.memory;
   }
 
 cleanup_curl:
   curl_easy_cleanup(curl);
+cleanup_header_chunk:
+  curl_slist_free_all(header_chunk);
 curl_init_error:
   return ret;
 }

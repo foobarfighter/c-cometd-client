@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <json-glib/json-glib.h>
 
-#include "../deps/ev/ev.h"
+#include "ev.h"
 
 #include "cometd.h"
 #include "cometd_json.h"
@@ -149,11 +149,16 @@ cometd_handshake(const cometd* h, cometd_callback callback)
   }
 
   cometd_process_payload(h, payload);
+  //json_node_free(payload);
   
-free_payload:   json_node_free(payload);
-free_resp:      free(resp);
-free_data:      g_free(data);
-free_handshake: json_node_free(handshake);
+free_payload:
+  json_node_free(payload);
+free_resp:
+  free(resp);
+free_data:
+  g_free(data);
+free_handshake:
+  json_node_free(handshake);
 
   return error_code;
 }
@@ -281,7 +286,8 @@ cometd_transport_send(const cometd* h, JsonNode* msg){
 }
 
 int
-cometd_connect(const cometd* h, cometd_callback cb){
+cometd_connect(const cometd* h, cometd_callback cb)
+{
   JsonNode* msg = cometd_new_connect_message(h);
 
   int ret = 0;
@@ -295,12 +301,19 @@ cometd_connect(const cometd* h, cometd_callback cb){
 
 
 void
-cometd_destroy(cometd* h){
-  g_list_free_full(h->config->transports, cometd_destroy_transport);
+cometd_destroy(cometd* h)
+{
+  cometd_destroy_config(h->config);
   
   free(h->last_error);
   free(h->conn);
   free(h);
+}
+
+void
+cometd_destroy_config(const cometd_config* config)
+{
+  g_list_free_full(config->transports, cometd_destroy_transport);
 }
 
 void

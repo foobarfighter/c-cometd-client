@@ -5,3 +5,40 @@
   fun:g_type_init_with_debug_flags
   fun:main
 }
+
+{
+  not_sure_if_leak_or_fucking_with_me1
+  Memcheck:Leak
+  ...
+  fun:json_parser_new
+  fun:cometd_json_str2node
+  ...
+  fun:main
+}
+
+{
+  not_sure_if_leak_or_fucking_with_me2
+  Memcheck:Leak
+  ...
+  fun:g_object_new
+  fun:cometd_json_str2node
+  ...
+}
+
+{
+  not_sure_if_leak_or_fucking_with_me3
+  Memcheck:Leak
+  ...
+  fun:g_object_new
+  fun:cometd_json_node2str
+  ...
+}
+
+{
+  not_sure_if_leak_or_fucking_with_me4
+  Memcheck:Leak
+  ...
+  fun:json_generator_new
+  fun:cometd_json_node2str
+  ...
+}

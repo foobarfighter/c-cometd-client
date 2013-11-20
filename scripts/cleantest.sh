@@ -1,8 +1,9 @@
 #!/bin/bash
 
-set -e
-
 cd "$(dirname "$0")"
+
+echo -n "Using node version: "
+echo `node -v`
 
 rm -rf ../build && mkdir ../build
 cd ../build

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 cd "$(dirname "$0")"
 
 export G_SLICE=always-malloc
@@ -13,6 +11,7 @@ valgrind --tool=memcheck \
          --leak-check=full \
          --leak-resolution=high \
          --suppressions=./cometd_suppressions.supp \
+         --gen-suppressions=yes \
          ../build/tests/check_cometd
 
 kill `ps aux | grep test_server | grep -v grep | \

@@ -37,14 +37,14 @@ static void setup (void)
 
 static void teardown (void)
 {
-  if (g_config != NULL){
-    free(g_config);
-    g_config = NULL;
-  }
-    
   if (g_instance != NULL){
     cometd_destroy(g_instance);
     g_instance = NULL;
+  }
+
+  if (g_config != NULL){
+    free(g_config);
+    g_config = NULL;
   }
 }
 
@@ -76,6 +76,8 @@ START_TEST (test_cometd_default_config)
   ck_assert_int_eq(DEFAULT_BACKOFF_INCREMENT, config.backoff_increment);
   ck_assert_int_eq(DEFAULT_REQUEST_TIMEOUT, config.request_timeout);
   fail_if(cometd_find_transport(&config, "long-polling") == NULL);
+
+  cometd_destroy_config(&config);
 }
 END_TEST
 
@@ -102,6 +104,8 @@ START_TEST (test_cometd_transport)
   // removing the transport should make it un-findable
   cometd_unregister_transport(g_config, t->name);
   fail_unless(cometd_find_transport(g_config, "test-transport") == NULL);
+
+  cometd_destroy_config(g_config);
 }
 END_TEST
 

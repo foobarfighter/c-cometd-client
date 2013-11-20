@@ -10,22 +10,30 @@ static cometd_config* g_config   = NULL;
 static cometd*        g_instance = NULL;
 
 static void
-teardown (void)
-{
-}
-
-static void
 setup (void)
 {
 }
 
+static void
+teardown (void)
+{
+  if (g_instance != NULL){
+    cometd_destroy(g_instance);
+    g_instance = NULL;
+  }
+  if (g_config != NULL){
+    free(g_config);
+    g_config = NULL;
+  }
+}
+
+
 static cometd*
-create_cometd(char *url){
+create_cometd(char *url)
+{
   g_config = (cometd_config*) malloc(sizeof(cometd_config));
   cometd_default_config(g_config);
-
   g_config->url = url;
-
   return cometd_new(g_config);
 }
 
@@ -46,9 +54,9 @@ START_TEST (test_cometd_handshake_success)
   g_instance = create_cometd(TEST_SERVER_URL);
 
   int code = cometd_handshake(g_instance, NULL);
-  fail_unless(code == 0);
   fail_unless(strcmp(g_instance->conn->transport->name, "long-polling") == 0);
   fail_unless(g_instance->conn->client_id != NULL);
+  ck_assert_int_eq(COMETD_SUCCESS, code);
 }
 END_TEST
 

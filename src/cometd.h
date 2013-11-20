@@ -95,6 +95,7 @@ typedef struct _cometd_subscription {
 cometd*         cometd_new              (cometd_config* config);
 void            cometd_default_config   (cometd_config* config);
 void            cometd_destroy          (cometd* h);
+void            cometd_destroy_config   (const cometd_config* config);
 
 // message creation / serialization
 JsonNode* cometd_new_connect_message  (const cometd* h);
