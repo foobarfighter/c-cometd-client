@@ -108,6 +108,7 @@ int cometd_connect      (const cometd* h, cometd_callback cb);
 int               cometd_register_transport    (cometd_config* h, const cometd_transport* transport);
 int               cometd_unregister_transport  (cometd_config* h, const char* name);
 cometd_transport* cometd_find_transport        (const cometd_config* h, const char *name);
+void              cometd_destroy_transport     (gpointer transport);
 
 // events
 cometd_subscription* cometd_add_listener(const cometd* h, const char * channel, cometd_callback cb);

@@ -29,8 +29,6 @@ cometd_default_config(cometd_config* config){
 
 cometd*
 cometd_new(cometd_config* config){
-  g_type_init();  // WTF
-
   cometd* h = malloc(sizeof(cometd));
 
   cometd_conn* conn = malloc(sizeof(cometd_conn));
@@ -298,9 +296,17 @@ cometd_connect(const cometd* h, cometd_callback cb){
 
 void
 cometd_destroy(cometd* h){
-  //g_slist_free(h->transports);
+  g_list_free_full(h->config->transports, cometd_destroy_transport);
+  
+  free(h->last_error);
   free(h->conn);
   free(h);
+}
+
+void
+cometd_destroy_transport(gpointer transport)
+{
+  g_free(transport);
 }
 
 int
