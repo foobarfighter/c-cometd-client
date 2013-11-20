@@ -59,12 +59,18 @@ http_valid_response(const char* body, size_t size)
  */
 char*
 http_json_post(const char *url, const char* data, int timeout){
+  char* ret = NULL;
+
   struct curl_slist *header_chunk = NULL;
 
   header_chunk = curl_slist_append(header_chunk,
                                    "Content-Type: application/json");
 
   CURL* curl = curl_easy_init();
+
+  if (curl == NULL)
+    goto curl_init_error;
+
   curl_easy_setopt(curl, CURLOPT_URL, url);
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_chunk);
   curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(data));
@@ -72,10 +78,11 @@ http_json_post(const char *url, const char* data, int timeout){
   curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout);
 
   MemoryStruct body;
-  /* will be grown as needed by the realloc above */ 
   body.memory = malloc(1);
-  /* no data at this point */
   body.size   = 0;
+
+  if (body.memory == NULL)
+    goto cleanup_curl;
 
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
   curl_easy_setopt(curl, CURLOPT_HEADER, 1);
@@ -83,13 +90,14 @@ http_json_post(const char *url, const char* data, int timeout){
 
   CURLcode res = curl_easy_perform(curl);
 
-  char* ret = NULL;
-
   if (res == CURLE_OK && http_valid_response(body.memory, body.size)){
     ret = body.memory;
+  } else {
+    free(body.memory);
   }
 
+cleanup_curl:
   curl_easy_cleanup(curl);
-
+curl_init_error:
   return ret;
 }
