@@ -123,13 +123,16 @@ END_TEST
 START_TEST (test_cometd_new_connect_message)
 {
   g_instance = create_cometd();
-
+  
+  strcpy(g_instance->conn->client_id, "testid");
   g_instance->conn->transport = &TEST_TRANSPORT;
 
   JsonNode* msg = cometd_new_connect_message(g_instance);
   JsonObject* obj = json_node_get_object(msg);
   const gchar* channel = json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
   fail_unless(strcmp(channel, COMETD_CHANNEL_META_CONNECT) == 0);
+
+  json_node_free(msg);
 }
 END_TEST
 

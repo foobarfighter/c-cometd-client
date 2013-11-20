@@ -18,6 +18,7 @@ START_TEST (test_http_json_post_success)
 {
   char* res = http_json_post(TEST_SUCCESS_CODE_URL, "{}", 100000);
   fail_unless(strstr(res, "echo") != NULL);
+  free(res);
 }
 END_TEST
 
