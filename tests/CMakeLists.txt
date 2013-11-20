@@ -13,6 +13,6 @@ add_executable(check_cometd check_cometd_main.c
                             check_http.c
                             test_helper.c)
 
-target_link_libraries(check_cometd cometd deps /opt/local/lib/libcheck.dylib )
+target_link_libraries(check_cometd cometd deps ${CHECK_LIBRARIES})
 
 add_test(check_cometd ${CMAKE_CURRENT_BINARY_DIR}/check_cometd)

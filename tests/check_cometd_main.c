@@ -1,4 +1,5 @@
 #include <check.h>
+#include <signal.h>
 #include <execinfo.h>
 #include <stdio.h>
 #include <unistd.h>

@@ -1,3 +1,6 @@
+#find_package(JsonGlib REQUIRED)
+find_package(CURL REQUIRED)
+
 include_directories (${GLIB2_INCLUDE_DIR}
                      ${JsonGlib_INCLUDE_DIRS}
                      ${ev_INCLUDE_DIRS}
