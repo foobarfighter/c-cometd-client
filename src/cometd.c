@@ -127,33 +127,41 @@ _extract_client_id(const cometd* h, JsonObject* node){
 int
 cometd_handshake(const cometd* h, cometd_callback callback)
 {
-  JsonNode* handshake = cometd_new_handshake_message(h);
-  gchar*    data      = cometd_json_node2str(handshake);
+  JsonNode* handshake   = cometd_new_handshake_message(h);
+  gchar*    data        = cometd_json_node2str(handshake);
+  int       error_code  = COMETD_SUCCESS;
 
-  if (data == NULL) {
-    return cometd_error(h, COMETD_ERROR_JSON, "could not serialize json");
+  if (data == NULL){
+    error_code = cometd_error(h, COMETD_ERROR_JSON, "could not serialize json");
+    goto free_handshake;
   }
-
-  json_node_free(handshake);
 
   char* resp = http_json_post(h->config->url, data, h->config->request_timeout);
-  g_free(data);
 
-  if (resp != NULL) {
-    JsonNode* payload = cometd_json_str2node(resp);
-    free(resp);
-
-    if (payload != NULL) {
-      cometd_process_payload(h, payload);
-      json_node_free(payload);
-    } else {
-      return cometd_error(h, COMETD_ERROR_JSON, "could not de-serialize json");
-    }
-  } else {
-    return cometd_error(h, COMETD_ERROR_HANDSHAKE, "could not handshake");
+  if (resp == NULL){
+    error_code = cometd_error(h, COMETD_ERROR_HANDSHAKE, "could not handshake");
+    goto free_data;
   }
+
+  JsonNode* payload = cometd_json_str2node(resp);
+
+  if (payload == NULL){
+    error_code = cometd_error(h, COMETD_ERROR_JSON, "could not de-serialize json");
+    goto free_resp;
+  }
+
+  cometd_process_payload(h, payload);
   
-  return COMETD_SUCCESS;
+free_payload:
+  json_node_free(payload);
+free_resp:
+  free(resp);
+free_data:
+  g_free(data);
+free_handshake:
+  json_node_free(handshake);
+
+  return error_code;
 }
 
 int
