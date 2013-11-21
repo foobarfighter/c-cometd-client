@@ -34,6 +34,12 @@
 #define COMETD_CHANNEL_META_UNSUBSCRIBE "/meta/unsubscribe"
 #define COMETD_CHANNEL_META_DISCONNECT  "/meta/disconnect"
 
+// Configuration options
+typedef enum {
+  COMETDOPT_URL = 0,
+  COMETDOPT_REQUEST_TIMEOUT
+} cometd_opt;
+
 // Errors
 #define COMETD_SUCCESS          0
 #define COMETD_ERROR_JSON       1
@@ -92,10 +98,9 @@ typedef struct _cometd_subscription {
 
 
 // configuration and lifecycle
-cometd*         cometd_new              (cometd_config* config);
-void            cometd_default_config   (cometd_config* config);
-void            cometd_destroy          (cometd* h);
-void            cometd_destroy_config   (const cometd_config* config);
+cometd* cometd_new       (void);
+int     cometd_configure (const cometd* h, cometd_opt opt, const char* value);
+void    cometd_destroy   (cometd* h);
 
 // message creation / serialization
 JsonNode* cometd_new_connect_message  (const cometd* h);

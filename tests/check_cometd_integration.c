@@ -6,44 +6,26 @@
 #include "check_cometd.h"
 #include "test_helper.h"
 
-static cometd_config* g_config   = NULL;
-static cometd*        g_instance = NULL;
+static cometd* g_instance = NULL;
 
 static void
 setup (void)
 {
+  g_instance = cometd_new();
 }
 
 static void
 teardown (void)
 {
-  if (g_instance != NULL){
-    cometd_destroy(g_instance);
-    g_instance = NULL;
-  }
-  if (g_config != NULL){
-    free(g_config);
-    g_config = NULL;
-  }
+  cometd_destroy(g_instance);
 }
-
-
-static cometd*
-create_cometd(char *url)
-{
-  g_config = (cometd_config*) malloc(sizeof(cometd_config));
-  cometd_default_config(g_config);
-  g_config->url = url;
-  return cometd_new(g_config);
-}
-
 
 /*
  *  Integration Suite
  */
 START_TEST (test_cometd_successful_init)
 {
-  g_instance = create_cometd(TEST_SERVER_URL);
+  cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
   cometd_init(g_instance);
   fail_unless(g_instance->conn->state == COMETD_CONNECTED);
 }
@@ -51,7 +33,7 @@ END_TEST
 
 START_TEST (test_cometd_handshake_success)
 {
-  g_instance = create_cometd(TEST_SERVER_URL);
+  cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
 
   int code = cometd_handshake(g_instance, NULL);
   fail_unless(strcmp(g_instance->conn->transport->name, "long-polling") == 0);
@@ -62,7 +44,7 @@ END_TEST
 
 START_TEST (test_cometd_handshake_failed_http)
 {
-  g_instance = create_cometd("http://localhost/service/does/not/exist");
+  cometd_configure(g_instance, COMETDOPT_URL, "http://localhost/service/does/not/exist");
 
   int code = cometd_handshake(g_instance, NULL);
   ck_assert_int_eq(COMETD_ERROR_HANDSHAKE, code); 
@@ -71,8 +53,8 @@ END_TEST
 
 START_TEST (test_cometd_handshake_failed_http_timeout)
 {
-  g_instance = create_cometd(TEST_LONG_REQUEST_URL);
-  g_instance->config->request_timeout = TEST_LONG_REQUEST_TIMEOUT;
+  cometd_configure(g_instance, COMETDOPT_URL, TEST_LONG_REQUEST_URL);
+  cometd_configure(g_instance, COMETDOPT_REQUEST_TIMEOUT, TEST_LONG_REQUEST_TIMEOUT);
 
   int code = cometd_handshake(g_instance, NULL);
   ck_assert_int_eq(COMETD_ERROR_HANDSHAKE, code); 
@@ -81,8 +63,11 @@ END_TEST
 
 START_TEST (test_cometd_handshake_failed_json)
 {
-  g_instance = create_cometd(TEST_BAD_JSON_URL);
-  g_instance->config->request_timeout = 1000;
+  cometd_configure(g_instance, COMETDOPT_URL, TEST_BAD_JSON_URL);
+  cometd_configure(g_instance, COMETDOPT_REQUEST_TIMEOUT, 1000);
+
+  //g_instance = create_cometd(TEST_BAD_JSON_URL);
+  //g_instance->config->request_timeout = 1000;
 
   int code = cometd_handshake(g_instance, NULL);
   ck_assert_int_eq(COMETD_ERROR_JSON, code); 
@@ -110,46 +95,46 @@ END_TEST
 //END_TEST
 
 
-static GCond cometd_init_cond;
-static GMutex cometd_init_mutex;
-static gboolean cometd_initialized = FALSE;
-
-gpointer cometd_init_thread(gpointer data){
-  cometd* instance = (cometd*) data;
-  cometd_init(instance);
-  fail_unless(g_instance->conn->state == COMETD_CONNECTED);
-
-  g_mutex_lock(&cometd_init_mutex);
-  cometd_initialized = TRUE;
-  g_cond_signal(&cometd_init_cond);
-  g_mutex_unlock(&cometd_init_mutex);
-}
-
-START_TEST (test_cometd_send_and_receive_message){
-  g_instance = create_cometd(TEST_SERVER_URL);
-  //cometd_add_listener(g_instance, "/meta/**", inbox_handler);
-  //cometd_add_listener(g_instance, "/echo/message/test", inbox_handler);
-
-  GThread* t = g_thread_new("cometd_init thread", &cometd_init_thread, g_instance);
-
-  g_mutex_lock(&cometd_init_mutex);
-  while (cometd_initialized == FALSE)
-    g_cond_wait(&cometd_init_cond, &cometd_init_mutex);
-
-  printf("this is where ill send messages\n");
-
-  //cometd_send(g_instance, "/echo/message/test", create_message_from_json(json_str));
-  //fail_unless(check_inbox_for_message(json_str, 10));
-  //cometd_disconnect(g_instance);
-
-  g_mutex_unlock(&cometd_init_mutex);
-
-  gpointer ret = g_thread_join(t);
-
-  fail();
-
-}
-END_TEST
+//static GCond cometd_init_cond;
+//static GMutex cometd_init_mutex;
+//static gboolean cometd_initialized = FALSE;
+//
+//gpointer cometd_init_thread(gpointer data){
+//  cometd* instance = (cometd*) data;
+//  cometd_init(instance);
+//  fail_unless(g_instance->conn->state == COMETD_CONNECTED);
+//
+//  g_mutex_lock(&cometd_init_mutex);
+//  cometd_initialized = TRUE;
+//  g_cond_signal(&cometd_init_cond);
+//  g_mutex_unlock(&cometd_init_mutex);
+//}
+//
+//START_TEST (test_cometd_send_and_receive_message){
+//  g_instance = create_cometd(TEST_SERVER_URL);
+//  //cometd_add_listener(g_instance, "/meta/**", inbox_handler);
+//  //cometd_add_listener(g_instance, "/echo/message/test", inbox_handler);
+//
+//  GThread* t = g_thread_new("cometd_init thread", &cometd_init_thread, g_instance);
+//
+//  g_mutex_lock(&cometd_init_mutex);
+//  while (cometd_initialized == FALSE)
+//    g_cond_wait(&cometd_init_cond, &cometd_init_mutex);
+//
+//  printf("this is where ill send messages\n");
+//
+//  //cometd_send(g_instance, "/echo/message/test", create_message_from_json(json_str));
+//  //fail_unless(check_inbox_for_message(json_str, 10));
+//  //cometd_disconnect(g_instance);
+//
+//  g_mutex_unlock(&cometd_init_mutex);
+//
+//  gpointer ret = g_thread_join(t);
+//
+//  fail();
+//
+//}
+//END_TEST
 
 Suite* make_cometd_integration_suite (void)
 {

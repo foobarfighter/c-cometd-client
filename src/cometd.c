@@ -14,8 +14,13 @@
 int  cometd_debug_handler (const cometd*, JsonNode*);
 void _process_payload     (JsonArray *array, guint idx, JsonNode* node, gpointer data);
 
-void
-cometd_default_config(cometd_config* config){
+cometd*
+cometd_new(void)
+{
+  cometd* h = malloc(sizeof(cometd));
+
+  // config
+  cometd_config* config = malloc(sizeof(cometd_config));
   config->url = "";
   config->backoff_increment = DEFAULT_BACKOFF_INCREMENT;
   config->max_backoff       = DEFAULT_MAX_BACKOFF;
@@ -23,18 +28,15 @@ cometd_default_config(cometd_config* config){
   config->request_timeout   = DEFAULT_REQUEST_TIMEOUT;
   config->append_message_type_to_url = DEFAULT_APPEND_MESSAGE_TYPE;
   config->transports = NULL;
-
   cometd_register_transport(config, &COMETD_TRANSPORT_LONG_POLLING);
-}
 
-cometd*
-cometd_new(cometd_config* config){
-  cometd* h = malloc(sizeof(cometd));
-
+  // connection
   cometd_conn* conn = malloc(sizeof(cometd_conn));
   conn->state = COMETD_DISCONNECTED;
+  conn->transport = NULL;
   conn->_msg_id_seed = 0;
 
+  // error state
   cometd_error_st* error = malloc(sizeof(cometd_error_st));
   error->code = COMETD_SUCCESS;
   error->message = NULL;;
@@ -44,6 +46,39 @@ cometd_new(cometd_config* config){
   h->last_error   = error;
 
   return h;
+}
+
+void
+cometd_destroy(cometd* h)
+{
+  // config
+  g_list_free_full(h->config->transports, cometd_destroy_transport);
+  free(h->config);
+ 
+  // connection
+  free(h->conn);
+
+  // error state
+  free(h->last_error);
+
+  // handle
+  free(h);
+}
+
+int
+cometd_configure(const cometd* h, cometd_opt opt, const char* value)
+{
+  switch (opt)
+  {
+    case COMETDOPT_URL:
+      h->config->url = value;
+      break;
+    case COMETDOPT_REQUEST_TIMEOUT:
+      h->config->request_timeout = value;
+    default:
+      return -1;
+  }
+  return 0;
 }
 
 //TODO: Should this be some sort of macro? I suck at C
@@ -218,6 +253,7 @@ cometd_transport*
 cometd_current_transport(const cometd* h){
   g_return_val_if_fail(h != NULL, NULL);
   g_return_val_if_fail(h->conn != NULL, NULL);
+  g_return_val_if_fail(h->conn->transport != NULL, NULL);
   
   return h->conn->transport;
 }
@@ -299,29 +335,6 @@ cometd_connect(const cometd* h, cometd_callback cb)
   return ret;
 }
 
-
-void
-cometd_destroy(cometd* h)
-{
-  cometd_destroy_config(h->config);
-  
-  free(h->last_error);
-  free(h->conn);
-  free(h);
-}
-
-void
-cometd_destroy_config(const cometd_config* config)
-{
-  g_list_free_full(config->transports, cometd_destroy_transport);
-}
-
-void
-cometd_destroy_transport(gpointer transport)
-{
-  g_free(transport);
-}
-
 int
 cometd_register_transport(cometd_config* h, const cometd_transport* transport){
   cometd_transport *t = g_new(cometd_transport, 1);
@@ -335,15 +348,15 @@ cometd_register_transport(cometd_config* h, const cometd_transport* transport){
   return 0;
 }
 
-gint
-_find_transport_by_name(gconstpointer a, gconstpointer b){
+static gint
+find_transport_by_name(gconstpointer a, gconstpointer b){
   const cometd_transport* t = (const cometd_transport*) a;
   return strcmp(t->name, b);
 }
 
 int
 cometd_unregister_transport(cometd_config* h, const char* name){
-  GList* t = g_list_find_custom(h->transports, name, _find_transport_by_name);
+  GList* t = g_list_find_custom(h->transports, name, find_transport_by_name);
   if (t == NULL) return 0;
 
   cometd_transport* transport = (cometd_transport*) t->data;
@@ -354,10 +367,19 @@ cometd_unregister_transport(cometd_config* h, const char* name){
 }
 
 cometd_transport*
-cometd_find_transport(const cometd_config* h, const char *name){
-  GList* t = g_list_find_custom(h->transports, name, _find_transport_by_name);
-  return (t == NULL) ? NULL : (cometd_transport*) t->data;
+cometd_find_transport(const cometd_config* h, const char *name)
+{
+  GList* t = g_list_find_custom(h->transports,
+                                name,
+                                find_transport_by_name);
 
+  return (t == NULL) ? NULL : (cometd_transport*) t->data;
+}
+
+void
+cometd_destroy_transport(gpointer transport)
+{
+  g_free(transport);
 }
 
 cometd_subscription*
