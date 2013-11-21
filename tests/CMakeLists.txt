@@ -13,6 +13,9 @@ add_executable(check_cometd check_cometd_main.c
                             check_http.c
                             test_helper.c)
 
+add_executable(check_stress check_cometd_json_stress.c)
+
 target_link_libraries(check_cometd cometd deps ${CHECK_LIBRARIES})
+target_link_libraries(check_stress cometd deps ${CHECK_LIBRARIES})
 
 add_test(check_cometd ${CMAKE_CURRENT_BINARY_DIR}/check_cometd)
