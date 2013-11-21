@@ -65,19 +65,26 @@ cometd_destroy(cometd* h)
   free(h);
 }
 
+#undef cometd_configure
 int
-cometd_configure(const cometd* h, cometd_opt opt, const char* value)
+cometd_configure(const cometd* h, cometd_opt opt, ...)
 {
+  va_list value;
+  va_start(value, opt);
+
   switch (opt)
   {
     case COMETDOPT_URL:
-      h->config->url = value;
+      h->config->url = va_arg(value, char*);
       break;
     case COMETDOPT_REQUEST_TIMEOUT:
-      h->config->request_timeout = value;
+      h->config->request_timeout = va_arg(value, long);
     default:
       return -1;
   }
+
+  va_end(value);
+
   return 0;
 }
 

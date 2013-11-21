@@ -65,10 +65,10 @@ typedef struct {
 // connection configuration object
 typedef struct {
   char*    url;
-  int      backoff_increment;
-  int      max_backoff;
-  int      max_network_delay;
-  int      request_timeout;
+  long     backoff_increment;
+  long     max_backoff;
+  long     max_network_delay;
+  long     request_timeout;
   int      append_message_type_to_url;
   GList*   transports; 
 } cometd_config;
@@ -99,8 +99,13 @@ typedef struct _cometd_subscription {
 
 // configuration and lifecycle
 cometd* cometd_new       (void);
-int     cometd_configure (const cometd* h, cometd_opt opt, const char* value);
 void    cometd_destroy   (cometd* h);
+/*
+  This redefinition technique is borrowed from curl_easy_setopt
+  to fake the compiler into enforcing the three parameter constraint
+  while allowing the implementation to accept a va_list.
+*/
+#define cometd_configure(h, opt, value) cometd_configure(h, opt, value)
 
 // message creation / serialization
 JsonNode* cometd_new_connect_message  (const cometd* h);
