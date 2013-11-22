@@ -66,9 +66,6 @@ START_TEST (test_cometd_handshake_failed_json)
   cometd_configure(g_instance, COMETDOPT_URL, TEST_BAD_JSON_URL);
   cometd_configure(g_instance, COMETDOPT_REQUEST_TIMEOUT, 1000);
 
-  //g_instance = create_cometd(TEST_BAD_JSON_URL);
-  //g_instance->config->request_timeout = 1000;
-
   int code = cometd_handshake(g_instance, NULL);
   ck_assert_int_eq(COMETD_ERROR_JSON, code); 
 }
