@@ -1,7 +1,11 @@
 #include <check.h>
-#include <cometd.h>
-#include <cometd_json.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include "cometd.h"
+#include "cometd_json.h"
+#include "test_helper.h"
 
 START_TEST(test_cometd_json_str2node_stress)
 {
@@ -9,6 +13,20 @@ START_TEST(test_cometd_json_str2node_stress)
     JsonNode* node = cometd_json_str2node("{}");
     json_node_free(node);
   }
+}
+END_TEST
+
+START_TEST(test_cometd_handshake_stress)
+{
+  cometd* h = cometd_new();
+  cometd_configure(h, COMETDOPT_URL, TEST_SERVER_URL);
+  while (1){
+    if (COMETD_SUCCESS != cometd_handshake(h, NULL)){
+      printf("handshake failed: %", cometd_last_error(h)->message);
+      //sleep(1);
+    }
+  }
+  cometd_destroy(h);
 }
 END_TEST
 
@@ -22,7 +40,8 @@ Suite* make_cometd_json_stress_suite (void)
 
   //tcase_add_checked_fixture (tc, setup, teardown);
   tcase_set_timeout (tc, 10000);
-  tcase_add_test (tc, test_cometd_json_str2node_stress);
+  //tcase_add_test (tc, test_cometd_json_str2node_stress);
+  tcase_add_test (tc, test_cometd_handshake_stress);
   suite_add_tcase (s, tc);
 
   return s;
