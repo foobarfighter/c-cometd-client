@@ -1,19 +1,11 @@
-ui_object ui = ui_create();
+int main (void)
+{
+  cometd* h = cometd_new();
+  cometd_configure(h, COMETDOPT_URL, "http://localhost:8089");
+  cometd_connect(h);
 
-cometd_message* msg;
+  cometd_subscribe(h, "/foo/bar", handle_foo_bar);
+  cometd_subscribe(h, "/baz/bar", handle_baz_bar);
 
-cometd* h = cometd_connect(config);
-
-thread = pthread_create();
-
-cometd_subscribe(h, "/my/topic");
-cometd_subscribe(h, "/my/other/topic");
-
-while (msg = cometd_recv(h)){
-  if (strcmp(msg->channel, "my/topic") == 0){
-    on_my_topic(msg);
-  } else if (strcmp(msg->channel, "/my/other/topic") == 0){
-    on_my_other_topic(msg);
-  }
+  cometd_listen();
 }
-
