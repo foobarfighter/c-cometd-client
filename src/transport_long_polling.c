@@ -47,9 +47,9 @@ _poll(const cometd* h){
   }
 
   // This should probably get updated in the meta/connect handler
-  if (ret != NULL){
-    h->conn->state = COMETD_CONNECTED;
-  }
+  //if (ret != NULL){
+  //  h->conn->state = COMETD_CONNECTED;
+  //}
 
   printf("=====polling6\n");
 

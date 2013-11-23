@@ -64,7 +64,7 @@ END_TEST
 
 START_TEST (test_cometd_new)
 {
-  fail_unless(g_instance->conn->state == COMETD_DISCONNECTED);
+  fail_unless(cometd_conn_is_status(g_instance, COMETD_UNINITIALIZED));
   ck_assert_int_eq(COMETD_SUCCESS, g_instance->last_error->code);
 
   char* actual_url = "http://example.com/cometd/";
@@ -122,6 +122,22 @@ START_TEST (test_cometd_error)
 }
 END_TEST
 
+START_TEST (test_cometd_conn_status)
+{
+  fail_unless(cometd_conn_is_status(g_instance, COMETD_UNINITIALIZED));
+
+  cometd_conn_set_status(g_instance, COMETD_HANDSHAKE_SUCCESS);
+  fail_unless(cometd_conn_is_status(g_instance, COMETD_HANDSHAKE_SUCCESS));
+
+  cometd_conn_set_status(g_instance, COMETD_CONNECTED);
+  fail_unless(cometd_conn_is_status(g_instance, COMETD_HANDSHAKE_SUCCESS));
+  fail_unless(cometd_conn_is_status(g_instance, COMETD_CONNECTED));
+
+  cometd_conn_clear_status(g_instance);
+
+  fail_unless(cometd_conn_is_status(g_instance, COMETD_UNINITIALIZED));
+}
+END_TEST
 
 Suite* make_cometd_unit_suite (void)
 {
@@ -135,6 +151,7 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_new_handshake_message);
   tcase_add_test (tc_unit, test_cometd_transport);
   tcase_add_test (tc_unit, test_cometd_error);
+  tcase_add_test (tc_unit, test_cometd_conn_status);
   suite_add_tcase (s, tc_unit);
 
   return s;

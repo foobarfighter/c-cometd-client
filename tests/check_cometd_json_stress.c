@@ -22,7 +22,7 @@ START_TEST(test_cometd_handshake_stress)
   cometd_configure(h, COMETDOPT_URL, TEST_SERVER_URL);
   while (1){
     if (COMETD_SUCCESS != cometd_handshake(h, NULL)){
-      printf("handshake failed: %", cometd_last_error(h)->message);
+      printf("handshake failed: %s", cometd_last_error(h)->message);
       //sleep(1);
     }
   }

@@ -16,9 +16,11 @@
 #define DEFAULT_REQUEST_TIMEOUT       30000
 
 // Connection state
-#define COMETD_DISCONNECTED           0x00000000
-#define COMETD_CONNECTED              0x00000001
-#define COMETD_DISCONNECTING          0x00000010
+#define COMETD_UNINITIALIZED          0x00000000
+#define COMETD_DISCONNECTED           0x00000001
+#define COMETD_HANDSHAKE_SUCCESS      0x00000002
+#define COMETD_CONNECTED              0x00000004
+#define COMETD_DISCONNECTING          0x00000008
 
 // Message fields
 #define COMETD_MSG_ID_FIELD           "id"
@@ -37,13 +39,16 @@
 // Configuration options
 typedef enum {
   COMETDOPT_URL = 0,
-  COMETDOPT_REQUEST_TIMEOUT
+  COMETDOPT_REQUEST_TIMEOUT,
+  COMETDOPT_INIT_LOOPFUNC
 } cometd_opt;
 
 // Errors
-#define COMETD_SUCCESS          0
-#define COMETD_ERROR_JSON       1
-#define COMETD_ERROR_HANDSHAKE  2
+#define COMETD_SUCCESS            0
+#define ECOMETD_JSON_SERIALIZE    1
+#define ECOMETD_JSON_DESERIALIZE  2
+#define ECOMETD_HANDSHAKE         3
+#define ECOMETD_INIT_LOOP         4
 
 // Other
 #define COMETD_MAX_CLIENT_ID_LEN 128
@@ -55,6 +60,7 @@ typedef struct _cometd cometd;
 // Transport callback functions
 typedef int       (*cometd_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
+typedef int       (*cometd_init_loopfunc)(const cometd* h);
 
 typedef struct {
   char*                name;
@@ -64,19 +70,25 @@ typedef struct {
 
 // connection configuration object
 typedef struct {
-  char*    url;
-  long     backoff_increment;
-  long     max_backoff;
-  long     max_network_delay;
-  long     request_timeout;
-  int      append_message_type_to_url;
-  GList*   transports; 
+  char*                url;
+  long                 backoff_increment;
+  long                 max_backoff;
+  long                 max_network_delay;
+  long                 request_timeout;
+  int                  append_message_type_to_url;
+  cometd_init_loopfunc init_loop_func;
+  GList*      transports; 
 } cometd_config;
 
 typedef struct {
-  int                            state;
-  long                           _msg_id_seed;
-  cometd_transport*              transport;
+  long               state;
+  long               _msg_id_seed;
+  cometd_transport*  transport;
+  GQueue*            inbox;
+  GCond*             inbox_cond;
+  GMutex*            inbox_mutex;
+  GThread*           inbox_thread;
+  
   char client_id[COMETD_MAX_CLIENT_ID_LEN];
 } cometd_conn;
 
@@ -112,10 +124,12 @@ JsonNode* cometd_new_connect_message  (const cometd* h);
 JsonNode* cometd_new_handshake_message(const cometd* h);
 
 // bayeux protocol
-int cometd_handshake    (const cometd* h, cometd_callback cb);
-int cometd_connect      (const cometd* h, cometd_callback cb);
+int         cometd_handshake    (const cometd* h, cometd_callback cb);
+int         cometd_connect      (const cometd* h, cometd_callback cb);
+JsonNode*   cometd_recv         (const cometd* h);
 
 // transports
+cometd_transport* cometd_current_transport     (const cometd* h);
 int               cometd_register_transport    (cometd_config* h, const cometd_transport* transport);
 int               cometd_unregister_transport  (cometd_config* h, const char* name);
 cometd_transport* cometd_find_transport        (const cometd_config* h, const char *name);
@@ -132,7 +146,12 @@ void cometd_process_message  (const cometd* h, JsonObject* message);
 void cometd_process_handshake(const cometd* h, JsonObject* message);
 
 // other
-int              cometd_error(const cometd* h, int code, char* message);
-cometd_error_st* cometd_last_error(const cometd* h);
+int               cometd_error(const cometd* h, int code, char* message);
+cometd_error_st*  cometd_last_error(const cometd* h);
+long              cometd_conn_status(const cometd* h);
+void              cometd_conn_set_status(const cometd* h, long status);
+long              cometd_conn_is_status(const cometd* h, long status);
+void              cometd_conn_clear_status(const cometd* h);
+int               cometd_init_loop(const cometd* h);
 
 #endif /* COMETD_H */

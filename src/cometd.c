@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
+#include <assert.h>
 #include <json-glib/json-glib.h>
 
 #include "ev.h"
@@ -27,25 +28,40 @@ cometd_new(void)
   config->max_network_delay = DEFAULT_MAX_NETWORK_DELAY;
   config->request_timeout   = DEFAULT_REQUEST_TIMEOUT;
   config->append_message_type_to_url = DEFAULT_APPEND_MESSAGE_TYPE;
-  config->transports = NULL;
+  config->transports        = NULL;
+  config->init_loop_func    = cometd_init_loop;
   cometd_register_transport(config, &COMETD_TRANSPORT_LONG_POLLING);
 
   // connection
+  GCond* cond = malloc(sizeof(GCond));
+  GMutex* mutex = malloc(sizeof(GMutex));
+  g_cond_init(cond);
+  g_mutex_init(mutex);
+
   cometd_conn* conn = malloc(sizeof(cometd_conn));
-  conn->state = COMETD_DISCONNECTED;
+  conn->state = COMETD_UNINITIALIZED;
   conn->transport = NULL;
   conn->_msg_id_seed = 0;
+  conn->inbox = g_queue_new();
+  conn->inbox_cond = cond;
+  conn->inbox_mutex = mutex;
 
   // error state
   cometd_error_st* error = malloc(sizeof(cometd_error_st));
   error->code = COMETD_SUCCESS;
   error->message = NULL;;
 
-  h->conn         = conn;
-  h->config       = config;
-  h->last_error   = error;
+  h->conn       = conn;
+  h->config     = config;
+  h->last_error = error;
 
   return h;
+}
+
+void
+cometd_g_free_cb(gpointer data, gpointer user_data)
+{
+  g_free(data);
 }
 
 void
@@ -56,6 +72,13 @@ cometd_destroy(cometd* h)
   free(h->config);
  
   // connection
+  g_queue_foreach(h->conn->inbox, cometd_g_free_cb, NULL);
+  g_queue_free(h->conn->inbox);
+
+  g_cond_clear(h->conn->inbox_cond);
+  free(h->conn->inbox_cond);
+  g_mutex_clear(h->conn->inbox_mutex);
+  free(h->conn->inbox_mutex);
   free(h->conn);
 
   // error state
@@ -79,6 +102,8 @@ cometd_configure(const cometd* h, cometd_opt opt, ...)
       break;
     case COMETDOPT_REQUEST_TIMEOUT:
       h->config->request_timeout = va_arg(value, long);
+    case COMETDOPT_INIT_LOOPFUNC:
+      h->config->init_loop_func = va_arg(value, cometd_init_loopfunc);
     default:
       return -1;
   }
@@ -93,28 +118,50 @@ int cometd_debug_handler(const cometd* h, JsonNode* node){
   //printf("returning some data from somewhere: \n");
 }
 
-int
-cometd_init(const cometd* h){
-  //struct ev_loop *loop = malloc(ev_loop);
+void
+cometd_push_inbox(JsonArray *array, guint idx, JsonNode* node, gpointer data)
+{
+  const cometd* h = (const cometd*) data;
+  JsonObject* message = json_node_get_object(node);
+  g_queue_push_tail(h->conn->inbox, message);
+}
 
-  if (cometd_handshake(h, cometd_debug_handler))
-    return 1;
-    //return _error(h, "handshake failed: %s", _error_msg(h));
+gpointer
+cometd_recv_loop(gpointer data)
+{
+  JsonNode* node;
 
-  _cometd_run_loop(h);
+  const cometd* h = (const cometd*) data;
+  while (!(cometd_conn_is_status(h, COMETD_DISCONNECTED)) &&
+         (node = cometd_recv(h)) != NULL)
+  {
+    g_mutex_lock(h->conn->inbox_mutex);
 
+    JsonArray* messages = json_node_get_array(node);
+    json_array_foreach_element(messages, cometd_push_inbox, (cometd*) h);
 
-  return 0;
+    g_cond_signal(h->conn->inbox_cond);
+    g_mutex_unlock(h->conn->inbox_mutex);
+  }
+  return NULL;
+}
+
+JsonNode*
+cometd_recv(const cometd* h)
+{
+  cometd_transport* t = cometd_current_transport(h);
+  JsonNode* node = t->recv(h);
+  return node;
 }
 
 int
-_cometd_run_loop(const cometd* h){
-  do {
-    JsonNode* node = h->conn->transport->recv(h);
-
-  } while (!(h->conn->state & (COMETD_DISCONNECTING | COMETD_DISCONNECTED)));
+cometd_init_loop(const cometd* h)
+{
+  h->conn->inbox_thread = g_thread_new("cometd_recv_loop",
+                                       cometd_recv_loop,
+                                       (gpointer)h);
+  return COMETD_SUCCESS;
 }
-
 
 int
 _negotiate_transport(const cometd* h, JsonObject* obj)
@@ -172,27 +219,36 @@ cometd_handshake(const cometd* h, cometd_callback callback)
   int       error_code  = COMETD_SUCCESS;
 
   if (data == NULL){
-    error_code = cometd_error(h, COMETD_ERROR_JSON, "could not serialize json");
+    error_code = cometd_error(h, ECOMETD_JSON_SERIALIZE, "could not serialize json");
     goto free_handshake;
   }
-
+  
   char* resp = http_json_post(h->config->url, data, h->config->request_timeout);
 
   if (resp == NULL){
-    error_code = cometd_error(h, COMETD_ERROR_HANDSHAKE, "could not handshake");
+    error_code = cometd_error(h, ECOMETD_HANDSHAKE, "could not handshake");
     goto free_data;
   }
 
   JsonNode* payload = cometd_json_str2node(resp);
 
   if (payload == NULL){
-    error_code = cometd_error(h, COMETD_ERROR_JSON, "could not de-serialize json");
+    error_code = cometd_error(h, ECOMETD_JSON_DESERIALIZE, "could not de-serialize json");
     goto free_resp;
   }
 
   cometd_process_payload(h, payload);
-  //json_node_free(payload);
-  
+
+  // TODO
+  if (cometd_conn_status(h) & COMETD_HANDSHAKE_SUCCESS == 0){
+    // backoff
+    // restart handshake
+  }
+
+  if (h->config->init_loop_func(h)){
+    error_code = cometd_error(h, ECOMETD_INIT_LOOP, "could not initialize connection loop");
+  }
+
 free_payload:
   json_node_free(payload);
 free_resp:
@@ -203,6 +259,43 @@ free_handshake:
   json_node_free(handshake);
 
   return error_code;
+}
+
+long
+cometd_conn_status(const cometd* h)
+{
+  g_return_val_if_fail(h != NULL, COMETD_UNINITIALIZED);
+  g_return_val_if_fail(h->conn != NULL, COMETD_UNINITIALIZED);
+
+  return h->conn->state;
+}
+
+long
+cometd_conn_is_status(const cometd* h, long status)
+{
+  long actual = cometd_conn_status(h);
+  if (status == COMETD_UNINITIALIZED)
+    return actual == COMETD_UNINITIALIZED;
+
+  return actual & status;
+}
+
+void
+cometd_conn_set_status(const cometd* h, long status)
+{
+  assert(h != NULL);
+  assert(h->conn != NULL);
+
+  h->conn->state = cometd_conn_status(h) | status;
+}
+
+void
+cometd_conn_clear_status(const cometd* h)
+{
+  assert(h != NULL);
+  assert(h->conn != NULL);
+
+  h->conn->state = COMETD_UNINITIALIZED;
 }
 
 int
@@ -254,6 +347,7 @@ cometd_process_handshake(const cometd* h, JsonObject* message)
 {
   _negotiate_transport(h, message);
   _extract_client_id(h, message);
+  h->conn->state = COMETD_HANDSHAKE_SUCCESS;
 }
 
 cometd_transport*
@@ -393,3 +487,4 @@ cometd_subscription*
 cometd_add_listener(const cometd* h, const char * channel, cometd_callback cb){
   return 0;
 }
+
