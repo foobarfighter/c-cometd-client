@@ -123,9 +123,9 @@ void    cometd_destroy   (cometd* h);
 JsonNode* cometd_new_connect_message  (const cometd* h);
 JsonNode* cometd_new_handshake_message(const cometd* h);
 
-// bayeux protocol
+// protocol
 int         cometd_handshake    (const cometd* h, cometd_callback cb);
-int         cometd_connect      (const cometd* h, cometd_callback cb);
+int         cometd_connect      (const cometd* h);
 JsonNode*   cometd_recv         (const cometd* h);
 
 // transports

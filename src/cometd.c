@@ -113,6 +113,26 @@ cometd_configure(const cometd* h, cometd_opt opt, ...)
   return 0;
 }
 
+int
+cometd_connect(const cometd* h)
+{
+  int error_code = cometd_handshake(h, NULL);
+
+  if (error_code != COMETD_SUCCESS){
+    goto error;
+  }
+
+  if (h->config->init_loop_func(h) != COMETD_SUCCESS){
+    error_code = cometd_error(h, ECOMETD_INIT_LOOP,
+                                 "could not initialize connection loop");
+    goto error;
+  }
+
+error:
+  return error_code;
+}
+
+
 //TODO: Should this be some sort of macro? I suck at C
 int cometd_debug_handler(const cometd* h, JsonNode* node){
   //printf("returning some data from somewhere: \n");
@@ -245,10 +265,6 @@ cometd_handshake(const cometd* h, cometd_callback callback)
     // restart handshake
   }
 
-  if (h->config->init_loop_func(h)){
-    error_code = cometd_error(h, ECOMETD_INIT_LOOP, "could not initialize connection loop");
-  }
-
 free_payload:
   json_node_free(payload);
 free_resp:
@@ -347,7 +363,7 @@ cometd_process_handshake(const cometd* h, JsonObject* message)
 {
   _negotiate_transport(h, message);
   _extract_client_id(h, message);
-  h->conn->state = COMETD_HANDSHAKE_SUCCESS;
+  cometd_conn_set_status(h, COMETD_HANDSHAKE_SUCCESS);
 }
 
 cometd_transport*
@@ -420,20 +436,6 @@ cometd_transport_send(const cometd* h, JsonNode* msg){
   g_return_val_if_fail(t != NULL, 1);
 
   return t->send(h, msg);
-}
-
-int
-cometd_connect(const cometd* h, cometd_callback cb)
-{
-  JsonNode* msg = cometd_new_connect_message(h);
-
-  int ret = 0;
-  if (ret = cometd_transport_send(h, msg)){
-    return ret;
-  }
-
-  h->conn->state = COMETD_CONNECTED;
-  return ret;
 }
 
 int
