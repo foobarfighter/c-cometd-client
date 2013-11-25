@@ -12,7 +12,7 @@
 #define TEST_SUCCESS_CODE_URL      "http://localhost:8090/echo_code?code=200"
 #define TEST_LONG_REQUEST_TIMEOUT  20
 
-int inbox_handler(const cometd* h, JsonNode* node);
-void await(int result);
+int log_handler(const cometd* h, JsonNode* message);
+int log_has_message(JsonNode* message);
 
 #endif // TEST_HELPER_H

@@ -179,6 +179,20 @@ cometd_recv_loop(gpointer data)
   return NULL;
 }
 
+int
+cometd_publish(const cometd* h, const char* channel, JsonNode* message)
+{
+  return ECOMETD_UNKNOWN;
+}
+
+int
+cometd_subscribe(const cometd* h,
+                 const char* channel,
+                 cometd_callback handler)
+{
+  return ECOMETD_UNKNOWN;
+}
+
 JsonNode*
 cometd_recv(const cometd* h)
 {

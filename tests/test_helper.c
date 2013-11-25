@@ -1,21 +1,18 @@
 #include <check.h>
 #include "../tests/test_helper.h"
 
-void
-await(int result)
-{
-  int i;
+static char log[255]; 
 
-  for (i = 0; i < 100000; ++i){
-    if (!result)
-      sleep(1);
-  }
+int
+log_handler(const cometd* h, JsonNode* message)
+{
+  return 1;
 }
 
 int
-inbox_handler(const cometd* h, JsonNode* node)
+log_has_message(JsonNode* message)
 {
-  return 0;
+  return 1;
 }
 
 

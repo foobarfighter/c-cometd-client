@@ -49,6 +49,7 @@ typedef enum {
 #define ECOMETD_JSON_DESERIALIZE  2
 #define ECOMETD_HANDSHAKE         3
 #define ECOMETD_INIT_LOOP         4
+#define ECOMETD_UNKNOWN           5
 
 // Other
 #define COMETD_MAX_CLIENT_ID_LEN 128
@@ -127,6 +128,8 @@ JsonNode* cometd_new_handshake_message(const cometd* h);
 int         cometd_handshake    (const cometd* h, cometd_callback cb);
 int         cometd_connect      (const cometd* h);
 JsonNode*   cometd_recv         (const cometd* h);
+int         cometd_publish      (const cometd* h, const char* channel, JsonNode* message);
+int         cometd_subscribe    (const cometd* h, const char* channel, cometd_callback handler);
 
 // transports
 cometd_transport* cometd_current_transport     (const cometd* h);
