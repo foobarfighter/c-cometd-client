@@ -190,7 +190,16 @@ cometd_subscribe(const cometd* h,
                  const char* channel,
                  cometd_callback handler)
 {
-  return ECOMETD_UNKNOWN;
+  int code = COMETD_SUCCESS;
+
+  JsonNode* node = cometd_new_subscribe_message(h, channel);
+  if (node == NULL)
+    goto error;
+
+  code = cometd_transport_send(h, node);
+  
+error:
+  return code;
 }
 
 JsonNode*
@@ -451,6 +460,32 @@ cometd_new_handshake_message(const cometd* h)
   json_object_set_array_member(obj, "supportedConnectionTypes", json_transports);
 
   // call extensions with message - TODO: implement extensions first
+  json_node_take_object(root, obj);
+
+  return root;
+}
+
+JsonNode*
+cometd_new_subscribe_message(const cometd* h, const char* channel)
+{
+  
+  gint64 seed = ++(h->conn->_msg_id_seed);
+
+  JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
+  JsonObject* obj  = json_object_new();
+
+  json_object_set_string_member(obj,
+                                COMETD_MSG_CHANNEL_FIELD,
+                                COMETD_CHANNEL_META_SUBSCRIBE);
+
+  json_object_set_string_member(obj,
+                                COMETD_MSG_CLIENT_ID_FIELD,
+                                h->conn->client_id);
+
+  json_object_set_string_member(obj,
+                                COMETD_MSG_SUBSCRIPTION_FIELD,
+                                channel);
+
   json_node_take_object(root, obj);
 
   return root;

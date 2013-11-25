@@ -107,6 +107,21 @@ START_TEST (test_cometd_new_handshake_message){
 }
 END_TEST
 
+START_TEST (test_cometd_new_subscribe_message){
+  const char* expected_channel = "/foo/bar/baz";
+
+  JsonNode* msg = cometd_new_subscribe_message(g_instance, expected_channel);
+  JsonObject* obj = json_node_get_object(msg);
+
+  const gchar* actual_channel = json_object_get_string_member(obj,
+                                  COMETD_MSG_SUBSCRIPTION_FIELD);
+
+  ck_assert_str_eq(expected_channel, actual_channel);
+
+  json_node_free(msg);
+}
+END_TEST
+
 START_TEST (test_cometd_error)
 {
   char* message = "hey now";
@@ -149,6 +164,7 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_new);
   tcase_add_test (tc_unit, test_cometd_new_connect_message);
   tcase_add_test (tc_unit, test_cometd_new_handshake_message);
+  tcase_add_test (tc_unit, test_cometd_new_subscribe_message);
   tcase_add_test (tc_unit, test_cometd_transport);
   tcase_add_test (tc_unit, test_cometd_error);
   tcase_add_test (tc_unit, test_cometd_conn_status);
