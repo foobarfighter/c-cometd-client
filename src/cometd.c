@@ -128,8 +128,21 @@ cometd_connect(const cometd* h)
     goto error;
   }
 
+  cometd_conn_set_status(h, COMETD_CONNECTED);
+
 error:
   return error_code;
+}
+
+int
+cometd_disconnect(const cometd* h, int wait_for_server)
+{
+  if (wait_for_server){
+    // TODO
+  } else {
+    cometd_conn_set_status(h, COMETD_DISCONNECTED);
+  } 
+  g_thread_join(h->conn->inbox_thread);
 }
 
 
@@ -260,7 +273,7 @@ cometd_handshake(const cometd* h, cometd_callback callback)
   cometd_process_payload(h, payload);
 
   // TODO
-  if (cometd_conn_status(h) & COMETD_HANDSHAKE_SUCCESS == 0){
+  if (!cometd_conn_is_status(h, COMETD_HANDSHAKE_SUCCESS)){
     // backoff
     // restart handshake
   }

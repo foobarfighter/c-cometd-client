@@ -30,9 +30,11 @@ START_TEST (test_cometd_connect_success)
   
   int code = cometd_connect(g_instance);
   ck_assert_int_eq(COMETD_SUCCESS, code);
+  fail_unless(cometd_conn_is_status(g_instance, COMETD_HANDSHAKE_SUCCESS));
+  fail_unless(cometd_conn_is_status(g_instance, COMETD_CONNECTED));
 
-  cometd_conn_set_status(g_instance, COMETD_DISCONNECTED);
-  g_thread_join(g_instance->conn->inbox_thread);
+  // Try to exit clean
+  cometd_disconnect(g_instance, 0);
 }
 END_TEST
 
