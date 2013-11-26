@@ -12,6 +12,7 @@ static cometd* g_instance = NULL;
 static void
 setup (void)
 {
+  log_clear();
   g_instance = cometd_new();
 }
 
@@ -100,8 +101,12 @@ START_TEST (test_cometd_subscribe_success)
   cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
   ck_assert_int_eq(COMETD_SUCCESS, cometd_connect(g_instance));
 
-  int code = cometd_subscribe(g_instance, "/foo/bar/baz", NULL);
-  ck_assert_int_eq(COMETD_SUCCESS, code);
+  cometd_subscription* s;
+
+  s = cometd_subscribe(g_instance, "/foo/bar/baz", NULL);
+  fail_unless(s != NULL);
+  
+  free(s);
 }
 END_TEST
 
@@ -115,7 +120,6 @@ START_TEST (test_cometd_send_and_receive_message){
 
   ck_assert_int_eq(COMETD_SUCCESS, cometd_publish(g_instance, "/echo/message/test", message));
   ck_assert_int_eq(0,              log_has_message(message));
-  ck_assert_int_eq(COMETD_SUCCESS, cometd_disconnect(g_instance));
 }
 END_TEST
 

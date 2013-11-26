@@ -55,6 +55,7 @@ typedef enum {
 
 // Other
 #define COMETD_MAX_CLIENT_ID_LEN 128
+#define COMETD_MAX_CHANNEL_LEN   512
 
 // Forward declaration stuff
 struct _cometd;
@@ -91,6 +92,7 @@ typedef struct {
   GCond*             inbox_cond;
   GMutex*            inbox_mutex;
   GThread*           inbox_thread;
+  GHashTable*        subscriptions;
   
   char client_id[COMETD_MAX_CLIENT_ID_LEN];
 } cometd_conn;
@@ -108,7 +110,8 @@ struct _cometd {
 };
 
 typedef struct _cometd_subscription {
-  long id;
+  char channel[COMETD_MAX_CHANNEL_LEN];
+  cometd_callback callback;
 } cometd_subscription;
 
 
@@ -131,20 +134,39 @@ JsonNode* cometd_new_subscribe_message(const cometd* h, const char* c);
 int         cometd_handshake    (const cometd* h, cometd_callback cb);
 int         cometd_connect      (const cometd* h);
 JsonNode*   cometd_recv         (const cometd* h);
-int         cometd_publish      (const cometd* h, const char* channel, JsonNode* message);
-int         cometd_subscribe    (const cometd* h, const char* channel, cometd_callback handler);
+
+int cometd_publish(const cometd* h,
+                   const char* channel,
+                   JsonNode* message);
+
+cometd_subscription* cometd_subscribe(const cometd* h,
+                                      char* channel,
+                                      cometd_callback handler);
 
 // transports
-cometd_transport* cometd_current_transport     (const cometd* h);
-int               cometd_register_transport    (cometd_config* h, const cometd_transport* transport);
-int               cometd_unregister_transport  (cometd_config* h, const char* name);
-cometd_transport* cometd_find_transport        (const cometd_config* h, const char *name);
-void              cometd_destroy_transport     (gpointer transport);
+cometd_transport* cometd_current_transport(const cometd* h);
+
+int cometd_register_transport(cometd_config* h,
+                              const cometd_transport* transport);
+
+int cometd_unregister_transport(cometd_config* h, const char* name);
+
+cometd_transport* cometd_find_transport(const cometd_config* h,
+                                        const char *name);
+
+void cometd_destroy_transport(gpointer transport);
 
 // events
-cometd_subscription* cometd_add_listener(const cometd* h, const char * channel, cometd_callback cb);
-//int                  cometd_remove_listener(const cometd* h, cometd_subscription* subscription);
-//int                  cometd_fire_listeners(const cometd* h, const char* channel);
+cometd_subscription* cometd_add_listener(const cometd* h,
+                                         char * channel,
+                                         cometd_callback cb);
+
+int cometd_remove_listener(const cometd* h,
+                           cometd_subscription* subscription);
+
+int cometd_fire_listeners(const cometd* h,
+                          const char* channel,
+                          JsonNode* message);
 
 // processing
 void cometd_process_payload  (const cometd* h, JsonNode* root);

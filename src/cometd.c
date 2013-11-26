@@ -45,6 +45,7 @@ cometd_new(void)
   conn->inbox = g_queue_new();
   conn->inbox_cond = cond;
   conn->inbox_mutex = mutex;
+  conn->subscriptions = g_hash_table_new(g_str_hash, g_str_equal);
 
   // error state
   cometd_error_st* error = malloc(sizeof(cometd_error_st));
@@ -80,6 +81,7 @@ cometd_destroy(cometd* h)
   g_mutex_clear(h->conn->inbox_mutex);
   free(h->conn->inbox_mutex);
   free(h->conn);
+  g_hash_table_destroy(h->conn->subscriptions);
 
   // error state
   free(h->last_error);
@@ -185,21 +187,27 @@ cometd_publish(const cometd* h, const char* channel, JsonNode* message)
   return ECOMETD_UNKNOWN;
 }
 
-int
+cometd_subscription*
 cometd_subscribe(const cometd* h,
-                 const char* channel,
+                 char* channel,
                  cometd_callback handler)
 {
-  int code = COMETD_SUCCESS;
+  cometd_subscription* s = NULL;
 
   JsonNode* node = cometd_new_subscribe_message(h, channel);
   if (node == NULL)
-    goto error;
+    goto failed_node;
 
-  code = cometd_transport_send(h, node);
-  
-error:
-  return code;
+  int code = cometd_transport_send(h, node);
+  if (code != COMETD_SUCCESS)
+    goto failed_send;
+
+  s = cometd_add_listener(h, channel, handler);
+
+failed_send:
+  json_node_free(node);
+failed_node:
+  return s;
 }
 
 JsonNode*
@@ -548,7 +556,96 @@ cometd_destroy_transport(gpointer transport)
 }
 
 cometd_subscription*
-cometd_add_listener(const cometd* h, const char * channel, cometd_callback cb){
-  return 0;
+cometd_add_listener(const cometd* h,
+                    char * channel,
+                    cometd_callback cb)
+{
+  g_return_val_if_fail(h->conn != NULL, NULL);
+  g_return_val_if_fail(h->conn->subscriptions != NULL, NULL);
+
+  GHashTable* subscriptions = h->conn->subscriptions;
+  int len                   = strlen(channel);
+
+  g_return_val_if_fail(len > 0 && len < COMETD_MAX_CHANNEL_LEN - 1, NULL);
+
+  cometd_subscription* s = malloc(sizeof(cometd_subscription));
+  if (s == NULL)
+    goto error;
+
+  strncpy(s->channel, channel, len + 1);
+  s->callback = cb;
+
+  /*
+    If the list isn't found then lookup will be NULL and prepend
+    will create a brand new list for us.
+  */
+  GList* list = (GList*) g_hash_table_lookup(subscriptions, channel);
+
+  /*
+    Prepend to existing list or create brand new list.
+  */
+  list = g_list_prepend(list, s);
+
+  /*
+    We always need to update the value because the pointer
+    to the list changes every time we prepend an element.
+  */
+  g_hash_table_insert(subscriptions, channel, list);
+
+error:
+  return s;
+}
+
+int
+cometd_remove_listener(const cometd* h,
+                       cometd_subscription* subscription)
+{
+  g_return_val_if_fail(h->conn != NULL, ECOMETD_UNKNOWN);
+  g_return_val_if_fail(h->conn->subscriptions != NULL, ECOMETD_UNKNOWN);
+  g_return_val_if_fail(subscription != NULL, ECOMETD_UNKNOWN);
+  g_return_val_if_fail(subscription->channel != NULL, ECOMETD_UNKNOWN);
+
+  GHashTable* subscriptions = h->conn->subscriptions;
+  char* channel = subscription->channel;
+
+  GList* list = (GList*) g_hash_table_lookup(subscriptions, channel);
+
+  list = g_list_remove(list, subscription);
+
+  // We need to reset the pointer because it may have changed.
+  g_hash_table_insert(subscriptions, channel, list);
+
+  free(subscription);
+
+  return COMETD_SUCCESS;
+}
+
+int
+cometd_fire_listeners(const cometd* h,
+                      const char* channel,
+                      JsonNode* message)
+{
+  g_return_val_if_fail(h->conn != NULL, ECOMETD_UNKNOWN);
+  g_return_val_if_fail(h->conn->subscriptions != NULL, ECOMETD_UNKNOWN);
+  g_return_val_if_fail(channel != NULL, ECOMETD_UNKNOWN);
+
+  GList* list = (GList*) g_hash_table_lookup(h->conn->subscriptions,
+                                             channel);
+  
+  // If the list is NULL then, then there are no subscriptions.
+  if (list == NULL) { return COMETD_SUCCESS; }
+
+  GList* item;
+  for (item = list; item; item = g_list_next(item))
+  {
+    cometd_subscription* s = (cometd_subscription*) item->data;
+    if (s->callback(h, message) != COMETD_SUCCESS) {
+      goto error;
+    }
+  }
+
+  return COMETD_SUCCESS;
+error:
+  return ECOMETD_UNKNOWN;
 }
 

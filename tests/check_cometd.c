@@ -6,6 +6,7 @@
 
 #include "check_cometd.h"
 #include "cometd.h"
+#include "cometd_json.h"
 #include "transport_long_polling.h"
 #include "test_helper.h"
 
@@ -24,6 +25,7 @@ static cometd_transport TEST_TRANSPORT = {
 
 static void setup (void)
 {
+  log_clear();
   g_instance = cometd_new();
   cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
 }
@@ -154,6 +156,30 @@ START_TEST (test_cometd_conn_status)
 }
 END_TEST
 
+START_TEST (test_cometd_add_listener)
+{
+  ck_assert_int_eq(0, log_size());
+
+  cometd_subscription* s;
+  int code;
+
+  JsonNode* message = cometd_json_str2node("{}");
+
+  s    = cometd_add_listener(g_instance, "/foo/bar/baz", log_handler);
+  code = cometd_fire_listeners(g_instance, "/foo/bar/baz", message);
+
+  ck_assert_int_eq(COMETD_SUCCESS, code);
+  ck_assert_int_eq(1, log_size());
+
+  code = cometd_remove_listener(g_instance, s);
+  ck_assert_int_eq(COMETD_SUCCESS, code);
+
+  code = cometd_fire_listeners(g_instance, "/foo/bar/baz", message);
+  ck_assert_int_eq(COMETD_SUCCESS, code);
+  ck_assert_int_eq(1, log_size());
+}
+END_TEST
+
 Suite* make_cometd_unit_suite (void)
 {
   Suite *s = suite_create ("Cometd");
@@ -168,6 +194,7 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_transport);
   tcase_add_test (tc_unit, test_cometd_error);
   tcase_add_test (tc_unit, test_cometd_conn_status);
+  tcase_add_test (tc_unit, test_cometd_add_listener);
   suite_add_tcase (s, tc_unit);
 
   return s;
