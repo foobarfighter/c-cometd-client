@@ -64,12 +64,13 @@ typedef struct _cometd cometd;
 
 // Transport callback functions
 typedef int       (*cometd_callback)(const cometd* h, JsonNode* message);
+typedef JsonNode* (*cometd_send_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
 typedef int       (*cometd_init_loopfunc)(const cometd* h);
 
 typedef struct {
   char*                name;
-  cometd_callback      send;
+  cometd_send_callback send;
   cometd_recv_callback recv;
 } cometd_transport;
 
@@ -130,6 +131,7 @@ void    cometd_destroy   (cometd* h);
 JsonNode* cometd_new_connect_message  (const cometd* h);
 JsonNode* cometd_new_handshake_message(const cometd* h);
 JsonNode* cometd_new_subscribe_message(const cometd* h, const char* c);
+JsonNode* cometd_new_unsubscribe_message(const cometd* h, const char* c);
 JsonNode* cometd_new_publish_message(const cometd* h,
                                      const char* c,
                                      JsonNode* data);
@@ -146,6 +148,7 @@ int cometd_publish(const cometd* h,
 cometd_subscription* cometd_subscribe(const cometd* h,
                                       char* channel,
                                       cometd_callback handler);
+int cometd_unsubscribe(const cometd* h, cometd_subscription* s);
 
 // transports
 cometd_transport* cometd_current_transport(const cometd* h);

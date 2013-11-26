@@ -18,5 +18,6 @@ int log_handler(const cometd* h, JsonNode* message);
 int log_has_message(JsonNode* message);
 guint log_size(void);
 void log_clear(void);
+guint wait_for_log_size(guint size);
 
 #endif // TEST_HELPER_H

@@ -1,5 +1,6 @@
 #include <check.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "cometd_json.h"
 #include "../tests/test_helper.h"
 
@@ -27,6 +28,16 @@ log_size(void)
 {
   return g_list_length(log);
 }
+
+guint
+wait_for_log_size(guint size)
+{
+  guint actual;
+  for (actual = 0; actual == 0; actual = log_size())
+    sleep(1);
+  ck_assert_int_eq(size, actual);
+}
+  
 
 void
 log_clear(void)

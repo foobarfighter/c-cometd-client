@@ -10,15 +10,10 @@
 
 static JsonNode* send(const cometd* h, JsonNode* node);
 
-int
+JsonNode*
 cometd_transport_long_polling_send(const cometd* h, JsonNode* node)
 {
-  JsonNode* n = send(h, node);
-
-  if (n != NULL)
-    json_node_free(n);
-
-  return 0;
+  return send(h, node);
 }
 
 JsonNode*
@@ -36,7 +31,7 @@ failed_connect_message:
   return ret;
 }
 
-JsonNode*
+static JsonNode*
 send(const cometd* h, JsonNode* node)
 {
   JsonNode* ret = NULL;

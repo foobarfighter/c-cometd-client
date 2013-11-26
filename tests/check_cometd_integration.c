@@ -36,6 +36,25 @@ do_connect (void)
   fail_unless(cometd_conn_is_status(g_instance, COMETD_HANDSHAKE_SUCCESS));
 }
 
+
+static GThread* listen_thread = NULL;
+
+gpointer
+cometd_listen_thread(gpointer data)
+{
+  const cometd* h = (const cometd*)data;
+  cometd_listen(h);
+}
+
+static
+GThread* start_cometd_listen_thread (void)
+{
+  listen_thread = g_thread_new("cometd_listen_thread",
+                                cometd_listen_thread,
+                                g_instance);
+  return listen_thread;
+}
+
 /*
  *  Integration Suite
  */
@@ -121,6 +140,31 @@ START_TEST (test_cometd_subscribe_success)
 }
 END_TEST
 
+START_TEST (test_cometd_unsubscribe_success)
+{
+  int code;
+  cometd_subscription* unsubscribe_s;
+  cometd_subscription* s;
+
+  do_connect();
+  ck_assert_int_eq(0, log_size());
+
+  unsubscribe_s = cometd_add_listener(g_instance,
+                                      COMETD_CHANNEL_META_UNSUBSCRIBE,
+                                      log_handler);
+  fail_unless(unsubscribe_s != NULL);
+
+  s = cometd_subscribe(g_instance, "/foo/bar/baz", log_handler);
+  fail_unless(s != NULL);
+
+  code = cometd_unsubscribe(g_instance, s);
+  ck_assert_int_eq(COMETD_SUCCESS, code);
+
+  start_cometd_listen_thread();
+  wait_for_log_size(1);
+}
+END_TEST
+
 START_TEST (test_cometd_publish_success)
 {
   int code;
@@ -135,13 +179,6 @@ START_TEST (test_cometd_publish_success)
 }
 END_TEST
 
-
-gpointer
-cometd_listen_thread(gpointer data)
-{
-  const cometd* h = (const cometd*)data;
-  cometd_listen(h);
-}
 
 START_TEST (test_cometd_send_and_receive_message){
   int code;
@@ -159,14 +196,9 @@ START_TEST (test_cometd_send_and_receive_message){
   code = cometd_publish(g_instance, "/echo/message/test", message);
   ck_assert_int_eq(COMETD_SUCCESS, code);
 
-  GThread* listen_thread = g_thread_new("cometd_listen_thread",
-                                        cometd_listen_thread,
-                                        g_instance);
+  start_cometd_listen_thread();
+  wait_for_log_size(1);
 
-  for (size = 0; size == 0; size = log_size())
-    sleep(1);
-  
-  ck_assert_int_eq(1, size);
   //code = cometd_unsubscribe(g_instance, s);
   //ck_assert_int_eq(COMETD_SUCCESS, code);
 }
@@ -189,6 +221,7 @@ Suite* make_cometd_integration_suite (void)
   tcase_add_test (tc_integration, test_cometd_handshake_failed_json);
   tcase_add_test (tc_integration, test_cometd_handshake_failed_http_timeout);
   tcase_add_test (tc_integration, test_cometd_subscribe_success);
+  tcase_add_test (tc_integration, test_cometd_unsubscribe_success);
   tcase_add_test (tc_integration, test_cometd_publish_success);
   tcase_add_test (tc_integration, test_cometd_send_and_receive_message);
   suite_add_tcase (s, tc_integration);

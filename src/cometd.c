@@ -252,6 +252,32 @@ failed_node:
   return s;
 }
 
+int
+cometd_unsubscribe(const cometd* h, cometd_subscription* s)
+{
+  int code = COMETD_SUCCESS;
+
+  JsonNode* node = cometd_new_unsubscribe_message(h, s->channel);
+  if (node == NULL)
+    goto failed_node;
+
+  // FIXME: We should only be unsubscribing with the server
+  // when there are no remaining local listeners
+  code = cometd_transport_send(h, node);
+  if (code != COMETD_SUCCESS)
+    goto failed_send;
+
+  code = cometd_remove_listener(h, s);
+  if (code != COMETD_SUCCESS)
+    goto failed_remove;
+
+failed_remove:
+failed_send:
+  json_node_free(node);
+failed_node:
+  return code;
+}
+
 JsonNode*
 cometd_recv(const cometd* h)
 {
@@ -570,13 +596,51 @@ cometd_new_subscribe_message(const cometd* h, const char* channel)
   return root;
 }
 
+JsonNode*
+cometd_new_unsubscribe_message(const cometd* h, const char* channel)
+{
+  
+  gint64 seed = ++(h->conn->_msg_id_seed);
+
+  JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
+  JsonObject* obj  = json_object_new();
+
+  json_object_set_int_member(obj, COMETD_MSG_ID_FIELD, seed);
+
+  json_object_set_string_member(obj,
+                                COMETD_MSG_CHANNEL_FIELD,
+                                COMETD_CHANNEL_META_UNSUBSCRIBE);
+
+  json_object_set_string_member(obj,
+                                COMETD_MSG_CLIENT_ID_FIELD,
+                                h->conn->client_id);
+
+  json_object_set_string_member(obj,
+                                COMETD_MSG_SUBSCRIPTION_FIELD,
+                                channel);
+
+  json_node_take_object(root, obj);
+
+  return root;
+}
+
 int
 cometd_transport_send(const cometd* h, JsonNode* msg){
   cometd_transport* t = cometd_current_transport(h);
 
-  g_return_val_if_fail(t != NULL, 1);
+  g_return_val_if_fail(t != NULL, ECOMETD_UNKNOWN);
 
-  return t->send(h, msg);
+  JsonNode* node = t->send(h, msg);
+  if (node == NULL)
+    goto failed_send;
+
+  printf("cometd_transport_send: %s", cometd_json_node2str(node));
+  cometd_process_payload(h, node);
+  json_node_free(node);
+
+  return COMETD_SUCCESS;
+failed_send:
+  return ECOMETD_UNKNOWN;
 }
 
 int
