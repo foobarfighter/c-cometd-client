@@ -184,7 +184,17 @@ cometd_recv_loop(gpointer data)
 int
 cometd_publish(const cometd* h, const char* channel, JsonNode* message)
 {
-  return ECOMETD_UNKNOWN;
+  int code = COMETD_SUCCESS;
+
+  JsonNode* node = cometd_new_publish_message(h, channel, message);
+  if (node == NULL)
+    goto failed_node;
+
+  code = cometd_transport_send(h, node);
+  json_node_free(node);
+
+failed_node:
+  return code;
 }
 
 cometd_subscription*
@@ -474,6 +484,33 @@ cometd_new_handshake_message(const cometd* h)
 }
 
 JsonNode*
+cometd_new_publish_message(const cometd* h,
+                           const char* channel,
+                           JsonNode* data)
+{
+  gint64 seed = ++(h->conn->_msg_id_seed);
+
+  JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
+  JsonObject* obj  = json_object_new();
+
+  json_object_set_int_member(obj, COMETD_MSG_ID_FIELD, seed);
+
+  json_object_set_string_member(obj,
+                                COMETD_MSG_CHANNEL_FIELD,
+                                channel);
+
+  json_object_set_string_member(obj,
+                                COMETD_MSG_CLIENT_ID_FIELD,
+                                h->conn->client_id);
+
+  json_object_set_member(obj, COMETD_MSG_DATA_FIELD, data);
+
+  json_node_take_object(root, obj);
+
+  return root;
+}
+
+JsonNode*
 cometd_new_subscribe_message(const cometd* h, const char* channel)
 {
   
@@ -481,6 +518,8 @@ cometd_new_subscribe_message(const cometd* h, const char* channel)
 
   JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
   JsonObject* obj  = json_object_new();
+
+  json_object_set_int_member(obj, COMETD_MSG_ID_FIELD, seed);
 
   json_object_set_string_member(obj,
                                 COMETD_MSG_CHANNEL_FIELD,

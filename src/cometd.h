@@ -24,6 +24,7 @@
 
 // Message fields
 #define COMETD_MSG_ID_FIELD           "id"
+#define COMETD_MSG_DATA_FIELD         "data"
 #define COMETD_MSG_CLIENT_ID_FIELD    "clientId"
 #define COMETD_MSG_CHANNEL_FIELD      "channel"
 #define COMETD_MSG_VERSION_FIELD      "version"
@@ -129,6 +130,9 @@ void    cometd_destroy   (cometd* h);
 JsonNode* cometd_new_connect_message  (const cometd* h);
 JsonNode* cometd_new_handshake_message(const cometd* h);
 JsonNode* cometd_new_subscribe_message(const cometd* h, const char* c);
+JsonNode* cometd_new_publish_message(const cometd* h,
+                                     const char* c,
+                                     JsonNode* data);
 
 // protocol
 int         cometd_handshake    (const cometd* h, cometd_callback cb);

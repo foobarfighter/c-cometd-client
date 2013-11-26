@@ -26,6 +26,16 @@ teardown (void)
   cometd_destroy(g_instance);
 }
 
+static void
+do_connect (void)
+{
+  cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
+
+  int code = cometd_connect(g_instance);
+  ck_assert_int_eq(COMETD_SUCCESS, code);
+  fail_unless(cometd_conn_is_status(g_instance, COMETD_HANDSHAKE_SUCCESS));
+}
+
 /*
  *  Integration Suite
  */
@@ -98,28 +108,52 @@ END_TEST
 
 START_TEST (test_cometd_subscribe_success)
 {
-  cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
-  ck_assert_int_eq(COMETD_SUCCESS, cometd_connect(g_instance));
-
+  int code;
   cometd_subscription* s;
 
-  s = cometd_subscribe(g_instance, "/foo/bar/baz", NULL);
+  do_connect();
+
+  s = cometd_subscribe(g_instance, "/foo/bar/baz", log_handler);
   fail_unless(s != NULL);
   
-  free(s);
+  code = cometd_remove_listener(g_instance, s);
+  ck_assert_int_eq(COMETD_SUCCESS, code);
+}
+END_TEST
+
+START_TEST (test_cometd_publish_success)
+{
+  int code;
+  do_connect();
+
+  JsonNode* message = cometd_json_str2node("{ \"message\": \"hey now\" }");
+
+  code = cometd_publish(g_instance, "/foo/bar/baz", message);
+  ck_assert_int_eq(COMETD_SUCCESS, code);
+
+  json_node_free(message);
 }
 END_TEST
 
 START_TEST (test_cometd_send_and_receive_message){
-  cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
+  int code;
+  cometd_subscription* s;
 
-  ck_assert_int_eq(COMETD_SUCCESS, cometd_connect(g_instance));
-  ck_assert_int_eq(COMETD_SUCCESS, cometd_subscribe(g_instance, "/echo/message/test", log_handler));
+  do_connect();
+
+  s = cometd_subscribe(g_instance, "/echo/message/test", log_handler);
+  fail_unless(s != NULL);
 
   JsonNode* message = cometd_json_str2node("{ \"message\": \"hey now\" }");
 
-  ck_assert_int_eq(COMETD_SUCCESS, cometd_publish(g_instance, "/echo/message/test", message));
-  ck_assert_int_eq(0,              log_has_message(message));
+  code = cometd_publish(g_instance, "/echo/message/test", message);
+  ck_assert_int_eq(COMETD_SUCCESS, code);
+  sleep(10);
+  ck_assert_int_eq(1, log_size());
+  //ck_assert_int_eq(0, log_has_message(message));
+
+  //code = cometd_unsubscribe(g_instance, s);
+  //ck_assert_int_eq(COMETD_SUCCESS, code);
 }
 END_TEST
 
@@ -140,6 +174,7 @@ Suite* make_cometd_integration_suite (void)
   tcase_add_test (tc_integration, test_cometd_handshake_failed_json);
   tcase_add_test (tc_integration, test_cometd_handshake_failed_http_timeout);
   tcase_add_test (tc_integration, test_cometd_subscribe_success);
+  tcase_add_test (tc_integration, test_cometd_publish_success);
   tcase_add_test (tc_integration, test_cometd_send_and_receive_message);
   suite_add_tcase (s, tc_integration);
 

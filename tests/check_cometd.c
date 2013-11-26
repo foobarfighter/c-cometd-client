@@ -109,10 +109,12 @@ START_TEST (test_cometd_new_handshake_message){
 }
 END_TEST
 
-START_TEST (test_cometd_new_subscribe_message){
+START_TEST (test_cometd_new_subscribe_message)
+{
   const char* expected_channel = "/foo/bar/baz";
 
-  JsonNode* msg = cometd_new_subscribe_message(g_instance, expected_channel);
+  JsonNode* msg = cometd_new_subscribe_message(g_instance,
+                                               expected_channel);
   JsonObject* obj = json_node_get_object(msg);
 
   const gchar* actual_channel = json_object_get_string_member(obj,
@@ -121,6 +123,32 @@ START_TEST (test_cometd_new_subscribe_message){
   ck_assert_str_eq(expected_channel, actual_channel);
 
   json_node_free(msg);
+}
+END_TEST
+
+START_TEST (test_cometd_new_publish_message)
+{
+  const char* expected_channel = "/baz/bar";
+  JsonNode* node = cometd_json_str2node("{ \"hey\": \"now\" }");
+  JsonNode* message = cometd_new_publish_message(g_instance,
+                                                 expected_channel,
+                                                 node);
+
+  JsonObject* obj = json_node_get_object(message);
+
+  const gchar* actual_channel = json_object_get_string_member(obj,
+                                  COMETD_MSG_CHANNEL_FIELD);
+
+  ck_assert_str_eq(expected_channel, actual_channel);
+
+  JsonObject* data = json_object_get_object_member(obj,
+                                  COMETD_MSG_DATA_FIELD);
+
+  char* value = json_object_get_string_member(data, "hey");
+  ck_assert_str_eq("now", value);
+
+  json_node_free(message);
+  json_node_free(node);
 }
 END_TEST
 
@@ -191,6 +219,7 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_new_connect_message);
   tcase_add_test (tc_unit, test_cometd_new_handshake_message);
   tcase_add_test (tc_unit, test_cometd_new_subscribe_message);
+  tcase_add_test (tc_unit, test_cometd_new_publish_message);
   tcase_add_test (tc_unit, test_cometd_transport);
   tcase_add_test (tc_unit, test_cometd_error);
   tcase_add_test (tc_unit, test_cometd_conn_status);
