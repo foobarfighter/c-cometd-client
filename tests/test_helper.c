@@ -33,5 +33,3 @@ log_clear(void)
 {
   log = NULL;
 }
-
-

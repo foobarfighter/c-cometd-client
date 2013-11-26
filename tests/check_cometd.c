@@ -144,7 +144,7 @@ START_TEST (test_cometd_new_publish_message)
   JsonObject* data = json_object_get_object_member(obj,
                                   COMETD_MSG_DATA_FIELD);
 
-  char* value = json_object_get_string_member(data, "hey");
+  const char* value = json_object_get_string_member(data, "hey");
   ck_assert_str_eq("now", value);
 
   json_node_free(message);

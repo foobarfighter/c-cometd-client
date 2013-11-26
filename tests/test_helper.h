@@ -12,6 +12,8 @@
 #define TEST_SUCCESS_CODE_URL      "http://localhost:8090/echo_code?code=200"
 #define TEST_LONG_REQUEST_TIMEOUT  20
 
+
+// log stuff
 int log_handler(const cometd* h, JsonNode* message);
 int log_has_message(JsonNode* message);
 guint log_size(void);

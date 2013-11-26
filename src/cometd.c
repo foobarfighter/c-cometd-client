@@ -181,6 +181,38 @@ cometd_recv_loop(gpointer data)
   return NULL;
 }
 
+void
+cometd_listen(const cometd* h)
+{
+  while (!cometd_conn_is_status(h, COMETD_DISCONNECTED))
+  {
+    g_mutex_lock(h->conn->inbox_mutex);
+
+    while (g_queue_is_empty(h->conn->inbox) == TRUE)
+      g_cond_wait(h->conn->inbox_cond, h->conn->inbox_mutex);
+
+    JsonObject* message;
+
+    while (g_queue_is_empty(h->conn->inbox) == FALSE)
+    {
+      message = (JsonObject*) g_queue_pop_head(h->conn->inbox);
+
+      // We should be doing this when we stuff things into the inbox
+      JsonNode* node = json_node_new(JSON_NODE_OBJECT);
+      if (node == NULL) continue;
+
+      json_node_set_object(node, message);
+
+      const gchar* channel = json_object_get_string_member(message,
+                                        COMETD_MSG_CHANNEL_FIELD);
+      cometd_fire_listeners(h, channel, node);
+      json_object_unref(message);
+    }
+
+    g_mutex_unlock(h->conn->inbox_mutex);
+  }
+}
+
 int
 cometd_publish(const cometd* h, const char* channel, JsonNode* message)
 {

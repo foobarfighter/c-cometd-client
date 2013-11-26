@@ -41,19 +41,20 @@ send(const cometd* h, JsonNode* node)
 {
   JsonNode* ret = NULL;
   
-  const char* data = cometd_json_node2str(node);
+  char* data = cometd_json_node2str(node);
   if (data == NULL)
     goto failed_data;
 
-  const char* resp = http_json_post(h->config->url,
-                                    data,
-                                    h->config->request_timeout);
+  char* resp = http_json_post(h->config->url,
+                              data,
+                              h->config->request_timeout);
   if (resp == NULL)
     goto failed_response;
 
   printf("raw response: %s\n", resp);
   ret = cometd_json_str2node(resp);
 
+  free(resp);
 failed_response:
   free(data);
 failed_data:

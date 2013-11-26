@@ -135,23 +135,38 @@ START_TEST (test_cometd_publish_success)
 }
 END_TEST
 
+
+gpointer
+cometd_listen_thread(gpointer data)
+{
+  const cometd* h = (const cometd*)data;
+  cometd_listen(h);
+}
+
 START_TEST (test_cometd_send_and_receive_message){
   int code;
+  size_t size;
   cometd_subscription* s;
 
   do_connect();
 
   s = cometd_subscribe(g_instance, "/echo/message/test", log_handler);
   fail_unless(s != NULL);
+  ck_assert_int_eq(0, log_size());
 
   JsonNode* message = cometd_json_str2node("{ \"message\": \"hey now\" }");
 
   code = cometd_publish(g_instance, "/echo/message/test", message);
   ck_assert_int_eq(COMETD_SUCCESS, code);
-  sleep(10);
-  ck_assert_int_eq(1, log_size());
-  //ck_assert_int_eq(0, log_has_message(message));
 
+  GThread* listen_thread = g_thread_new("cometd_listen_thread",
+                                        cometd_listen_thread,
+                                        g_instance);
+
+  for (size = 0; size == 0; size = log_size())
+    sleep(1);
+  
+  ck_assert_int_eq(1, size);
   //code = cometd_unsubscribe(g_instance, s);
   //ck_assert_int_eq(COMETD_SUCCESS, code);
 }
