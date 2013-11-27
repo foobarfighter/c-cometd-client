@@ -14,6 +14,14 @@
 
 int  cometd_debug_handler (const cometd*, JsonNode*);
 
+const gchar*
+cometd_get_channel(JsonObject* obj)
+{
+  g_assert(obj != NULL);
+
+  return json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
+}
+
 cometd*
 cometd_new(void)
 {
@@ -166,6 +174,13 @@ cometd_recv_loop(gpointer data)
   return NULL;
 }
 
+
+/**
+ * Reads JsonNodes that are received by the inbox thread.
+ * If a handler wishes to to keep a JsonNode in memory
+ * longer than the lifetime of a cometd_callback, then it
+ * must increase the reference count to the node.
+ */
 void
 cometd_listen(const cometd* h)
 {
@@ -184,9 +199,9 @@ cometd_listen(const cometd* h)
       node    = (JsonNode*) g_queue_pop_head(h->conn->inbox);
       message = json_node_get_object(node);
 
-      const gchar* channel = json_object_get_string_member(message,
-                                          COMETD_MSG_CHANNEL_FIELD);
+      const gchar* channel = cometd_get_channel(message);;
       cometd_fire_listeners(h, channel, node);
+      json_node_free(node);
     }
 
     g_mutex_unlock(h->conn->inbox_mutex);
@@ -357,8 +372,6 @@ cometd_handshake(const cometd* h, cometd_callback callback)
     // restart handshake
   }
 
-free_payload:
-  //json_node_free(payload);
 free_resp:
   free(resp);
 free_data:
@@ -429,6 +442,7 @@ cometd_process_message(JsonArray *array,
 {
   const cometd* h = (const cometd*) data;
   JsonObject* message = json_node_get_object(node);
+
   const gchar* channel = json_object_get_string_member(message,
                                     COMETD_MSG_CHANNEL_FIELD);
 
@@ -439,12 +453,15 @@ cometd_process_message(JsonArray *array,
   g_queue_push_tail(h->conn->inbox, node);
 }
 
+/**
+ * Processes a cometd payload.
+ */
 void
 cometd_process_payload(const cometd* h, JsonNode* root)
 {
-  JsonArray* messages = json_node_get_array(root);
   g_mutex_lock(h->conn->inbox_mutex);
 
+  JsonArray* messages = json_node_get_array(root);
   json_array_foreach_element(messages,
                              cometd_process_message,
                              (cometd*) h);
@@ -621,7 +638,6 @@ cometd_transport_send(const cometd* h, JsonNode* msg){
 
   // FIXME: Don't process ack messages
   cometd_process_payload(h, node);
-  //json_node_free(node);
 
   return COMETD_SUCCESS;
 failed_send:

@@ -9,6 +9,9 @@ static GList* log = NULL;
 int
 log_handler(const cometd* h, JsonNode* message)
 {
+  // FIXME: This holds invalid memory addresses
+  // because message is free'd after the handler
+  // is called.
   log = g_list_prepend(log, message);
 
   gchar* str = cometd_json_node2str(message);
