@@ -13,7 +13,6 @@
 #include "transport_long_polling.h"
 
 int  cometd_debug_handler (const cometd*, JsonNode*);
-void _process_payload     (JsonArray *array, guint idx, JsonNode* node, gpointer data);
 
 cometd*
 cometd_new(void)
@@ -62,7 +61,7 @@ cometd_new(void)
 void
 cometd_g_free_cb(gpointer data, gpointer user_data)
 {
-  g_free(data);
+  json_node_free((JsonNode*) data);
 }
 
 void
@@ -153,14 +152,6 @@ int cometd_debug_handler(const cometd* h, JsonNode* node){
   //printf("returning some data from somewhere: \n");
 }
 
-void
-cometd_push_inbox(JsonArray *array, guint idx, JsonNode* node, gpointer data)
-{
-  const cometd* h = (const cometd*) data;
-  JsonObject* message = json_node_get_object(node);
-  g_queue_push_tail(h->conn->inbox, message);
-}
-
 gpointer
 cometd_recv_loop(gpointer data)
 {
@@ -170,13 +161,7 @@ cometd_recv_loop(gpointer data)
   while (!(cometd_conn_is_status(h, COMETD_DISCONNECTED)) &&
          (node = cometd_recv(h)) != NULL)
   {
-    g_mutex_lock(h->conn->inbox_mutex);
-
-    JsonArray* messages = json_node_get_array(node);
-    json_array_foreach_element(messages, cometd_push_inbox, (cometd*) h);
-
-    g_cond_signal(h->conn->inbox_cond);
-    g_mutex_unlock(h->conn->inbox_mutex);
+    cometd_process_payload(h, node);
   }
   return NULL;
 }
@@ -191,22 +176,17 @@ cometd_listen(const cometd* h)
     while (g_queue_is_empty(h->conn->inbox) == TRUE)
       g_cond_wait(h->conn->inbox_cond, h->conn->inbox_mutex);
 
+    JsonNode* node;
     JsonObject* message;
 
     while (g_queue_is_empty(h->conn->inbox) == FALSE)
     {
-      message = (JsonObject*) g_queue_pop_head(h->conn->inbox);
-
-      // We should be doing this when we stuff things into the inbox
-      JsonNode* node = json_node_new(JSON_NODE_OBJECT);
-      if (node == NULL) continue;
-
-      json_node_set_object(node, message);
+      node    = (JsonNode*) g_queue_pop_head(h->conn->inbox);
+      message = json_node_get_object(node);
 
       const gchar* channel = json_object_get_string_member(message,
-                                        COMETD_MSG_CHANNEL_FIELD);
+                                          COMETD_MSG_CHANNEL_FIELD);
       cometd_fire_listeners(h, channel, node);
-      json_object_unref(message);
     }
 
     g_mutex_unlock(h->conn->inbox_mutex);
@@ -378,7 +358,7 @@ cometd_handshake(const cometd* h, cometd_callback callback)
   }
 
 free_payload:
-  json_node_free(payload);
+  //json_node_free(payload);
 free_resp:
   free(resp);
 free_data:
@@ -442,37 +422,42 @@ cometd_last_error(const cometd* h)
 }
 
 void
-_process_message(JsonArray *array,guint idx, JsonNode* node, gpointer data)
+cometd_process_message(JsonArray *array,
+                       guint idx,
+                       JsonNode* node,
+                       gpointer data)
 {
   const cometd* h = (const cometd*) data;
   JsonObject* message = json_node_get_object(node);
-  cometd_process_message(h, message);
-}
-
-void
-cometd_process_message(const cometd* h, JsonObject* message)
-{
   const gchar* channel = json_object_get_string_member(message,
                                     COMETD_MSG_CHANNEL_FIELD);
 
-  //g_return_val_if_fail(channel != NULL, void);
-
+  // handlers to process immediately
   if (strcmp(channel, COMETD_CHANNEL_META_HANDSHAKE) == 0) {
-    cometd_process_handshake(h, message);
+    cometd_process_handshake(h, node);
   }
-  //cometd_fire_handlers(h, message);
+  g_queue_push_tail(h->conn->inbox, node);
 }
 
 void
 cometd_process_payload(const cometd* h, JsonNode* root)
 {
   JsonArray* messages = json_node_get_array(root);
-  json_array_foreach_element(messages, _process_message, (cometd*) h);
+  g_mutex_lock(h->conn->inbox_mutex);
+
+  json_array_foreach_element(messages,
+                             cometd_process_message,
+                             (cometd*) h);
+
+  g_cond_signal(h->conn->inbox_cond);
+  g_mutex_unlock(h->conn->inbox_mutex);
 }
 
 void
-cometd_process_handshake(const cometd* h, JsonObject* message)
+cometd_process_handshake(const cometd* h, JsonNode* root)
 {
+  JsonObject* message = json_node_get_object(root);
+
   _negotiate_transport(h, message);
   _extract_client_id(h, message);
   cometd_conn_set_status(h, COMETD_HANDSHAKE_SUCCESS);
@@ -634,9 +619,9 @@ cometd_transport_send(const cometd* h, JsonNode* msg){
   if (node == NULL)
     goto failed_send;
 
-  printf("cometd_transport_send: %s", cometd_json_node2str(node));
+  // FIXME: Don't process ack messages
   cometd_process_payload(h, node);
-  json_node_free(node);
+  //json_node_free(node);
 
   return COMETD_SUCCESS;
 failed_send:

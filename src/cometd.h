@@ -177,8 +177,8 @@ int cometd_fire_listeners(const cometd* h,
 
 // processing
 void cometd_process_payload  (const cometd* h, JsonNode* root);
-void cometd_process_message  (const cometd* h, JsonObject* message);
-void cometd_process_handshake(const cometd* h, JsonObject* message);
+void cometd_process_message(JsonArray *array, guint idx, JsonNode* node, gpointer data);
+void cometd_process_handshake(const cometd* h, JsonNode* root);
 
 // other
 int               cometd_error(const cometd* h, int code, char* message);

@@ -1,5 +1,6 @@
 #include "http.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <curl/curl.h>
 
@@ -83,6 +84,7 @@ http_json_post(const char *url, const char* data, int timeout){
     free(body.memory);
   } else {
     ret = body.memory;
+    printf("raw response:\n=========\n%s\n\n", ret);
   }
 
 cleanup_curl:

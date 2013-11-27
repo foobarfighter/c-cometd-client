@@ -46,7 +46,6 @@ send(const cometd* h, JsonNode* node)
   if (resp == NULL)
     goto failed_response;
 
-  printf("raw response: %s\n", resp);
   ret = cometd_json_str2node(resp);
 
   free(resp);

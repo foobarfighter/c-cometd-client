@@ -191,7 +191,7 @@ START_TEST (test_cometd_send_and_receive_message){
   fail_unless(s != NULL);
   ck_assert_int_eq(0, log_size());
 
-  JsonNode* message = cometd_json_str2node("{ \"message\": \"hey now\" }");
+  JsonNode* message = cometd_json_str2node("{\"message\": \"hey now\"}");
 
   code = cometd_publish(g_instance, "/echo/message/test", message);
   ck_assert_int_eq(COMETD_SUCCESS, code);
