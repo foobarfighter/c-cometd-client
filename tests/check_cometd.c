@@ -11,9 +11,7 @@
 #include "test_helper.h"
 
 static cometd* g_instance = NULL;
-static int       test_transport_send(const cometd* h, JsonNode* node);
-static JsonNode* test_transport_recv(const cometd* h);
-static int test_transport_send(const cometd* h, JsonNode* node) { return 0; }
+static JsonNode* test_transport_send(const cometd* h, JsonNode* node) { return NULL; }
 static JsonNode* test_transport_recv(const cometd* h) { return NULL; }
 
 static cometd_transport TEST_TRANSPORT = {
@@ -236,6 +234,7 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_new_connect_message);
   tcase_add_test (tc_unit, test_cometd_new_handshake_message);
   tcase_add_test (tc_unit, test_cometd_new_subscribe_message);
+  tcase_add_test (tc_unit, test_cometd_new_unsubscribe_message);
   tcase_add_test (tc_unit, test_cometd_new_publish_message);
   tcase_add_test (tc_unit, test_cometd_transport);
   tcase_add_test (tc_unit, test_cometd_error);

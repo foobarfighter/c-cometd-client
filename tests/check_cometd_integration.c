@@ -197,7 +197,7 @@ START_TEST (test_cometd_send_and_receive_message){
   ck_assert_int_eq(COMETD_SUCCESS, code);
 
   start_cometd_listen_thread();
-  wait_for_log_size(1);
+  wait_for_log_size(2);
 
   //code = cometd_unsubscribe(g_instance, s);
   //ck_assert_int_eq(COMETD_SUCCESS, code);

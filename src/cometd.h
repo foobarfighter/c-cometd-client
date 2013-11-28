@@ -3,6 +3,8 @@
 
 #include <glib.h>
 #include <json-glib/json-glib.h>
+#include "cometd_msg.h"
+#include "cometd_json.h"
 
 // Version
 #define COMETD_VERSION                "1.0"
@@ -31,6 +33,7 @@
 #define COMETD_MSG_MIN_VERSION_FIELD  "minimumVersion"
 #define COMETD_MSG_ADVICE_FIELD       "advice"
 #define COMETD_MSG_SUBSCRIPTION_FIELD "subscription"
+#define COMETD_MSG_SUCCESSFUL_FIELD   "successful"
 
 // Channels
 #define COMETD_CHANNEL_META_HANDSHAKE   "/meta/handshake"
@@ -191,3 +194,4 @@ int               cometd_init_loop(const cometd* h);
 void              cometd_listen(const cometd* h);
 
 #endif /* COMETD_H */
+

@@ -10,7 +10,7 @@
 START_TEST(test_cometd_json_str2node_stress)
 {
   while (1){
-    JsonNode* node = cometd_json_str2node("{}");
+    JsonNode* node = cometd_json_str2node("[1, { \"successful\": true } ]");
     json_node_free(node);
   }
 }

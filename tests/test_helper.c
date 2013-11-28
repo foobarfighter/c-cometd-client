@@ -36,8 +36,10 @@ guint
 wait_for_log_size(guint size)
 {
   guint actual;
-  for (actual = 0; actual == 0; actual = log_size())
+  for (actual = 0; actual == 0; actual = log_size()){
+    printf("log_size() == %d\n", actual);
     sleep(1);
+  }
   ck_assert_int_eq(size, actual);
 }
   

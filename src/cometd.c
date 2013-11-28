@@ -339,7 +339,7 @@ _extract_client_id(const cometd* h, JsonObject* node){
 }
 
 int
-cometd_handshake(const cometd* h, cometd_callback callback)
+cometd_handshake(const cometd* h, cometd_callback cb)
 {
   JsonNode* handshake   = cometd_new_handshake_message(h);
   gchar*    data        = cometd_json_node2str(handshake);
@@ -627,21 +627,21 @@ cometd_new_unsubscribe_message(const cometd* h, const char* channel)
 }
 
 int
-cometd_transport_send(const cometd* h, JsonNode* msg){
-  cometd_transport* t = cometd_current_transport(h);
+cometd_transport_send(const cometd* h, JsonNode* msg)
+{
+  int code = COMETD_SUCCESS;
 
+  cometd_transport* t = cometd_current_transport(h);
   g_return_val_if_fail(t != NULL, ECOMETD_UNKNOWN);
 
-  JsonNode* node = t->send(h, msg);
-  if (node == NULL)
-    goto failed_send;
+  JsonNode* payload = t->send(h, msg);
 
-  // FIXME: Don't process ack messages
-  cometd_process_payload(h, node);
-
-  return COMETD_SUCCESS;
-failed_send:
-  return ECOMETD_UNKNOWN;
+  if (payload != NULL)
+    code = cometd_msg_is_successful(payload) ? COMETD_SUCCESS : ECOMETD_UNKNOWN;
+  
+  cometd_process_payload(h, payload);
+  
+  return code;
 }
 
 int
