@@ -563,7 +563,9 @@ cometd_new_publish_message(const cometd* h,
                                 COMETD_MSG_CLIENT_ID_FIELD,
                                 h->conn->client_id);
 
-  json_object_set_member(obj, COMETD_MSG_DATA_FIELD, data);
+  json_object_set_member(obj,
+                         COMETD_MSG_DATA_FIELD,
+                         json_node_copy(data));
 
   json_node_take_object(root, obj);
 
