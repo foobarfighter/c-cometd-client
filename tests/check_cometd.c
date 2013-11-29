@@ -80,7 +80,7 @@ END_TEST
 
 START_TEST (test_cometd_new_connect_message)
 {
-  strcpy(g_instance->conn->client_id, "testid");
+  cometd_conn_set_client_id(g_instance, "testid");
   cometd_register_transport(g_instance->config, &TEST_TRANSPORT);
   g_instance->conn->transport = &TEST_TRANSPORT;
 
@@ -109,6 +109,7 @@ END_TEST
 
 START_TEST (test_cometd_new_subscribe_message)
 {
+  cometd_conn_set_client_id(g_instance, "testid");
   const char* expected_channel = "/foo/bar/baz";
 
   JsonNode* msg = cometd_new_subscribe_message(g_instance,
@@ -126,6 +127,7 @@ END_TEST
 
 START_TEST (test_cometd_new_unsubscribe_message)
 {
+  cometd_conn_set_client_id(g_instance, "testid");
   const char* expected_channel = "/foo/bar/baz";
 
   JsonNode* msg = cometd_new_unsubscribe_message(g_instance,
@@ -143,6 +145,7 @@ END_TEST
 
 START_TEST (test_cometd_new_publish_message)
 {
+  cometd_conn_set_client_id(g_instance, "testid");
   const char* expected_channel = "/baz/bar";
   JsonNode* node = cometd_json_str2node("{ \"hey\": \"now\" }");
   JsonNode* message = cometd_new_publish_message(g_instance,

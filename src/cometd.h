@@ -190,6 +190,7 @@ long              cometd_conn_status(const cometd* h);
 void              cometd_conn_set_status(const cometd* h, long status);
 long              cometd_conn_is_status(const cometd* h, long status);
 void              cometd_conn_clear_status(const cometd* h);
+void              cometd_conn_set_client_id(const cometd* h, const char *id);
 int               cometd_init_loop(const cometd* h);
 void              cometd_listen(const cometd* h);
 

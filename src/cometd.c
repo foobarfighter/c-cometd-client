@@ -411,6 +411,14 @@ cometd_conn_set_status(const cometd* h, long status)
 }
 
 void
+cometd_conn_set_client_id(const cometd* h, const char* id)
+{
+  g_assert(id != NULL);
+
+  strcpy(h->conn->client_id, id);
+}
+
+void
 cometd_conn_clear_status(const cometd* h)
 {
   assert(h != NULL);
