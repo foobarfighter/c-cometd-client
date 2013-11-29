@@ -87,8 +87,8 @@ cometd_destroy(cometd* h)
   free(h->conn->inbox_cond);
   g_mutex_clear(h->conn->inbox_mutex);
   free(h->conn->inbox_mutex);
-  free(h->conn);
   g_hash_table_destroy(h->conn->subscriptions);
+  free(h->conn);
 
   // error state
   free(h->last_error);
