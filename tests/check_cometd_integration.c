@@ -8,6 +8,7 @@
 #include "test_helper.h"
 
 static cometd* g_instance = NULL;
+static GThread* listen_thread = NULL;
 
 static void
 setup (void)
@@ -21,7 +22,15 @@ teardown (void)
 {
   // Try to exit clean
   if (cometd_conn_is_status(g_instance, COMETD_CONNECTED))
+  {
     cometd_disconnect(g_instance, 0);
+  }
+
+  if (listen_thread != NULL)
+  {
+    g_thread_join(listen_thread);
+    listen_thread = NULL;
+  }
 
   cometd_destroy(g_instance);
 }
@@ -35,9 +44,6 @@ do_connect (void)
   ck_assert_int_eq(COMETD_SUCCESS, code);
   fail_unless(cometd_conn_is_status(g_instance, COMETD_HANDSHAKE_SUCCESS));
 }
-
-
-static GThread* listen_thread = NULL;
 
 gpointer
 cometd_listen_thread(gpointer data)
