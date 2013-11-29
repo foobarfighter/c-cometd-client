@@ -13,7 +13,6 @@
   fun:json_parser_new
   fun:cometd_json_str2node
   ...
-  fun:main
 }
 
 {
