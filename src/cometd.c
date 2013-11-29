@@ -170,6 +170,7 @@ cometd_recv_loop(gpointer data)
          (node = cometd_recv(h)) != NULL)
   {
     cometd_process_payload(h, node);
+    json_node_free(node);
   }
   return NULL;
 }
@@ -371,7 +372,8 @@ cometd_handshake(const cometd* h, cometd_callback cb)
     // backoff
     // restart handshake
   }
-
+free_payload:
+  json_node_free(payload);
 free_resp:
   free(resp);
 free_data:
@@ -449,16 +451,17 @@ cometd_process_message(JsonArray *array,
                        gpointer data)
 {
   const cometd* h = (const cometd*) data;
-  JsonObject* message = json_node_get_object(node);
+  JsonNode* save = json_node_copy(node);
+  JsonObject* message = json_node_get_object(save);
 
   const gchar* channel = json_object_get_string_member(message,
                                     COMETD_MSG_CHANNEL_FIELD);
 
   // handlers to process immediately
   if (strcmp(channel, COMETD_CHANNEL_META_HANDSHAKE) == 0) {
-    cometd_process_handshake(h, node);
+    cometd_process_handshake(h, save);
   }
-  g_queue_push_tail(h->conn->inbox, node);
+  g_queue_push_tail(h->conn->inbox, save);
 }
 
 /**
@@ -646,10 +649,13 @@ cometd_transport_send(const cometd* h, JsonNode* msg)
 
   JsonNode* payload = t->send(h, msg);
 
-  if (payload != NULL)
-    code = cometd_msg_is_successful(payload) ? COMETD_SUCCESS : ECOMETD_UNKNOWN;
-  
-  cometd_process_payload(h, payload);
+  if (payload != NULL) {
+    code = cometd_msg_is_successful(payload) ?
+              COMETD_SUCCESS : ECOMETD_UNKNOWN;
+
+    cometd_process_payload(h, payload);
+    json_node_free(payload);
+  }
   
   return code;
 }
