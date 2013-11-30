@@ -13,6 +13,7 @@
 #include "transport_long_polling.h"
 
 int  cometd_debug_handler (const cometd*, JsonNode*);
+static void cometd_destroy_subscription(gpointer subscription);
 
 const gchar*
 cometd_get_channel(JsonObject* obj)
@@ -52,6 +53,7 @@ cometd_new(void)
   conn->inbox = g_queue_new();
   conn->inbox_cond = cond;
   conn->inbox_mutex = mutex;
+
   conn->subscriptions = g_hash_table_new(g_str_hash, g_str_equal);
 
   // error state
@@ -67,9 +69,18 @@ cometd_new(void)
 }
 
 void
-cometd_g_free_cb(gpointer data, gpointer user_data)
+cometd_g_free_cb(gpointer item)
 {
-  json_node_free((JsonNode*) data);
+  json_node_free((JsonNode*) item);
+}
+
+
+static void
+cometd_destroy_subscription_list(gpointer key,
+                                 gpointer value,
+                                 gpointer userdata)
+{
+  g_list_free_full((GList*)value, free);
 }
 
 void
@@ -80,13 +91,17 @@ cometd_destroy(cometd* h)
   free(h->config);
  
   // connection
-  g_queue_foreach(h->conn->inbox, cometd_g_free_cb, NULL);
-  g_queue_free(h->conn->inbox);
+  g_queue_free_full(h->conn->inbox, cometd_g_free_cb);
 
   g_cond_clear(h->conn->inbox_cond);
   free(h->conn->inbox_cond);
   g_mutex_clear(h->conn->inbox_mutex);
   free(h->conn->inbox_mutex);
+
+  g_hash_table_foreach(h->conn->subscriptions,
+                       cometd_destroy_subscription_list,
+                       h);
+
   g_hash_table_destroy(h->conn->subscriptions);
   free(h->conn);
 
