@@ -13,7 +13,6 @@ static GThread* listen_thread = NULL;
 static void
 setup (void)
 {
-  log_clear();
   g_instance = cometd_new();
 }
 
@@ -33,6 +32,7 @@ teardown (void)
   }
 
   cometd_destroy(g_instance);
+  log_clear();
 }
 
 static void
@@ -76,7 +76,7 @@ START_TEST (test_cometd_connect_success)
 }
 END_TEST
 
-int test_init_fail_loop(const cometd* h) { return 1; }
+static int test_init_fail_loop(const cometd* h) { return 1; }
 
 START_TEST (test_cometd_connect_fail_init_loop)
 {
@@ -204,6 +204,8 @@ START_TEST (test_cometd_send_and_receive_message){
 
   start_cometd_listen_thread();
   wait_for_log_size(2);
+
+  json_node_free(message);
 
   //code = cometd_unsubscribe(g_instance, s);
   //ck_assert_int_eq(COMETD_SUCCESS, code);
