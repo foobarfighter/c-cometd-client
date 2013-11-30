@@ -9,25 +9,40 @@ static void teardown (void)
 {
 }
 
+static void
+assert_bool_node_func(char *str,
+                      gboolean (*cb)(JsonNode* n),
+                      gboolean expected)
+{
+  JsonNode* n = cometd_json_str2node(str);
+  gboolean ret = cb(n);
+  fail_unless(ret == expected);
+  json_node_free(n);
+}
+
 START_TEST (test_cometd_msg_is_successful)
 {
-  JsonNode* n;
-  gboolean ret;
+  assert_bool_node_func("[{ \"successful\": true }]}",
+    cometd_msg_is_successful, TRUE);
 
-  n = cometd_json_str2node("[{ \"successful\": true }]}");
-  ret = cometd_msg_is_successful(n);
-  fail_unless(ret == TRUE);
-  json_node_free(n);
+  assert_bool_node_func("[{ \"successful\": false }]}",
+    cometd_msg_is_successful, FALSE);
 
-  n = cometd_json_str2node("[{ \"successful\": false }]}");
-  ret = cometd_msg_is_successful(n);
-  fail_unless(ret == FALSE);
-  json_node_free(n);
+  assert_bool_node_func("[1, { \"successful\": true }]}",
+    cometd_msg_is_successful, FALSE);
+}
+END_TEST
 
-  n = cometd_json_str2node("[1, { \"successful\": true }]}");
-  ret = cometd_msg_is_successful(n);
-  fail_unless(ret == FALSE);
-  json_node_free(n);
+START_TEST (test_cometd_msg_has_data)
+{
+  assert_bool_node_func("[]",
+    cometd_msg_has_data, FALSE);
+
+  assert_bool_node_func("{ \"data\": {} }",
+    cometd_msg_has_data, TRUE);
+
+  assert_bool_node_func("{ \"no data for you\": {} }",
+    cometd_msg_has_data, FALSE);
 }
 END_TEST
 
@@ -38,6 +53,7 @@ Suite* make_cometd_msg_suite (void)
   TCase *tc_unit = tcase_create ("msg");
   tcase_add_checked_fixture (tc_unit, setup, teardown);
   tcase_add_test (tc_unit, test_cometd_msg_is_successful);
+  tcase_add_test (tc_unit, test_cometd_msg_has_data);
   suite_add_tcase (s, tc_unit);
 
   return s;

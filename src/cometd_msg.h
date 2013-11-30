@@ -4,5 +4,6 @@
 #include "cometd.h"
 
 gboolean cometd_msg_is_successful(JsonNode* node);
+gboolean cometd_msg_has_data(JsonNode* node);
 
 #endif // COMETD_MSG_H
