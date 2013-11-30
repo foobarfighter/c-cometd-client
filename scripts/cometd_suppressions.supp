@@ -7,7 +7,7 @@
 }
 
 {
-  not_sure_if_leak_or_fucking_with_me1
+  verified_json_parser_new_doesnt_leak
   Memcheck:Leak
   ...
   fun:json_parser_new
