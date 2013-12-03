@@ -5,8 +5,7 @@
 #include <assert.h>
 #include <json-glib/json-glib.h>
 
-#include "ev.h"
-
+//#include "ev.h"
 #include "cometd.h"
 #include "cometd_json.h"
 #include "http.h"

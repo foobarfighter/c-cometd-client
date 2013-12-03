@@ -20,4 +20,7 @@ guint log_size(void);
 void log_clear(void);
 guint wait_for_log_size(guint size);
 
+// json matchers
+gboolean json_node_equal(JsonNode* a, JsonNode* b, GList* excludes);
+
 #endif // TEST_HELPER_H

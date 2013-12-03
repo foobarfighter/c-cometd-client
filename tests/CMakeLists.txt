@@ -12,6 +12,7 @@ add_executable(check_cometd check_cometd_main.c
                             check_cometd_msg.c
                             check_cometd_integration.c
                             check_http.c
+                            check_test_helper.c
                             test_helper.c)
 
 add_executable(check_stress check_cometd_json_stress.c)
