@@ -5,43 +5,65 @@
 #include "cometd_json.h"
 #include "../tests/test_helper.h"
 
-static GList* log = NULL;
+static GQueue* log = NULL;
+static GMutex log_mutex;
+static GCond  log_cond;
 
 int
 log_handler(const cometd* h, JsonNode* message)
 {
-  // FIXME: This holds invalid memory addresses
-  // because message is free'd after the handler
-  // is called.
-  log = g_list_prepend(log, json_node_copy(message));
+  g_mutex_lock(&log_mutex);
+  g_queue_push_tail(log, json_node_copy(message));
 
   gchar* str = cometd_json_node2str(message);
   printf("== added message to log\n%s\n\n", str);
   g_free(str);
-  return 0;
-}
 
-int
-log_has_message(JsonNode* message)
-{
+  g_cond_signal(&log_cond);
+  g_mutex_unlock(&log_mutex);
+
   return 0;
 }
 
 guint
 log_size(void)
 {
-  return g_list_length(log);
+  guint size;
+  g_mutex_lock(&log_mutex);
+  size = g_queue_get_length(log);
+  g_mutex_unlock(&log_mutex);
+  return size;
 }
 
-guint
-wait_for_log_size(guint size)
+void
+wait_for_message(gint timeout, GList* excludes, char* json)
 {
-  guint actual;
-  for (actual = 0; actual == 0; actual = log_size()){
-    printf("log_size() == %d\n", actual);
-    sleep(1);
+  JsonNode* node;
+  JsonNode* message = cometd_json_str2node(json);
+
+  while (1)
+  {
+    g_mutex_lock(&log_mutex);
+
+    while (g_queue_is_empty(log) == TRUE)
+      g_cond_wait(&log_cond, &log_mutex);
+
+    node = (JsonNode*) g_queue_pop_head(log);
+
+    gchar* str = cometd_json_node2str(node);
+    printf("== processing message from log\n%s\n\n", str);
+    g_free(str);
+
+    g_mutex_unlock(&log_mutex);
+
+    if (json_node_equal(node, message, excludes))
+    {
+      printf("== found match in log\n\n");
+      json_node_free(node);
+      break;
+    }
   }
-  ck_assert_int_eq(size, actual);
+  json_node_free(message);
 }
   
 static void
@@ -50,8 +72,10 @@ free_node(gpointer data) { json_node_free((JsonNode*) data); }
 void
 log_clear(void)
 {
-  g_list_free_full(log, free_node);
-  log = NULL;
+  if (log)
+    g_queue_free_full(log, free_node);
+
+  log = g_queue_new();
 }
 
 static gboolean
@@ -98,7 +122,7 @@ json_array_equal(JsonNode* a, JsonNode* b, GList* exclude_props)
     JsonNode* element_a = json_array_get_element(array_a, i);
     JsonNode* element_b = json_array_get_element(array_b, i);
 
-    if (!json_node_equal(element_a, element_b, NULL))
+    if (!json_node_equal(element_a, element_b, exclude_props))
       return FALSE;
   }
   return TRUE;

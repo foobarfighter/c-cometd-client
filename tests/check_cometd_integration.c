@@ -13,6 +13,7 @@ static GThread* listen_thread = NULL;
 static void
 setup (void)
 {
+  log_clear();
   g_instance = cometd_new();
 }
 
@@ -32,7 +33,6 @@ teardown (void)
   }
 
   cometd_destroy(g_instance);
-  log_clear();
 }
 
 static void
@@ -167,7 +167,17 @@ START_TEST (test_cometd_unsubscribe_success)
   ck_assert_int_eq(COMETD_SUCCESS, code);
 
   start_cometd_listen_thread();
-  wait_for_log_size(1);
+
+  GList* excludes = NULL;
+  excludes = g_list_prepend(excludes, "clientId");
+  excludes = g_list_prepend(excludes, "id");
+
+  wait_for_message(100, excludes,
+    "{ \"id\": 4,                           \
+       \"clientId\": \"PLACEHOLDER\",       \
+       \"channel\": \"/meta/unsubscribe\",  \
+       \"successful\": true,                \
+       \"subscription\": \"/foo/bar/baz\" }");
 }
 END_TEST
 
@@ -203,7 +213,14 @@ START_TEST (test_cometd_send_and_receive_message){
   ck_assert_int_eq(COMETD_SUCCESS, code);
 
   start_cometd_listen_thread();
-  wait_for_log_size(2);
+
+  GList* excludes = NULL;
+  excludes = g_list_prepend(excludes, "id");
+
+  wait_for_message(100, excludes,
+    "{ \"id\": 4, \
+       \"channel\": \"/echo/message/test\", \
+       \"data\": { \"message\": \"hey now\" } }");
 
   json_node_free(message);
 

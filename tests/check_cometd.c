@@ -215,14 +215,14 @@ START_TEST (test_cometd_add_listener)
   code = cometd_fire_listeners(g_instance, "/foo/bar/baz", message);
 
   ck_assert_int_eq(COMETD_SUCCESS, code);
-  ck_assert_int_eq(1, log_size());
+  wait_for_message(100, NULL, "{}");
 
   code = cometd_remove_listener(g_instance, s);
   ck_assert_int_eq(COMETD_SUCCESS, code);
 
   code = cometd_fire_listeners(g_instance, "/foo/bar/baz", message);
   ck_assert_int_eq(COMETD_SUCCESS, code);
-  ck_assert_int_eq(1, log_size());
+  ck_assert_int_eq(0, log_size());
 
   json_node_free(message);
 }

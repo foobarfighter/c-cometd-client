@@ -74,6 +74,8 @@ START_TEST (test_json_nodes_match)
   assert_json_match_excluding("{ \"hey\": \"now\", \"client_id\": 1234 }",
                               "{ \"hey\": \"now\", \"client_id\": 4567 }",
                               exclusions);
+  
+  g_list_free(exclusions);
 }
 END_TEST
 
