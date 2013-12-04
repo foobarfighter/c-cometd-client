@@ -265,25 +265,27 @@ failed_node:
 int
 cometd_unsubscribe(const cometd* h, cometd_subscription* s)
 {
-  int code = ECOMETD_UNKNOWN;
-
-  JsonNode* node = cometd_new_unsubscribe_message(h, s->channel);
-  if (node == NULL)
-    goto failed_node;
-
   char channel[COMETD_MAX_CHANNEL_LEN] = { 0 };
+  int code = ECOMETD_UNKNOWN;
+  JsonNode* node;
+
+  // save off channel because it gets free'd by
+  // cometd_remove_listener
   strcpy(channel, s->channel);
 
   code = cometd_remove_listener(h, s);
-  if (code != COMETD_SUCCESS)
-    goto failed_send;
 
   if (cometd_has_listener(h, channel) == FALSE)
-    code = cometd_transport_send(h, node);
+  {
+    JsonNode* node = cometd_new_unsubscribe_message(h, s->channel);
 
-failed_send:
-  json_node_free(node);
-failed_node:
+    if (node != NULL)
+    {
+      code = cometd_transport_send(h, node);
+      json_node_free(node);
+    }
+  }
+
   return code;
 }
 
