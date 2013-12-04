@@ -56,10 +56,14 @@ wait_for_message(gint timeout, GList* excludes, char* json)
 
     g_mutex_unlock(&log_mutex);
 
-    if (json_node_equal(node, message, excludes))
+    gboolean is_equal = json_node_equal(node, message, excludes);
+  
+    // free the node that was allocated by the log_handler
+    json_node_free(node);
+
+    if (is_equal)
     {
       printf("== found match in log\n\n");
-      json_node_free(node);
       break;
     }
   }
@@ -140,6 +144,8 @@ json_object_equal(JsonNode* a, JsonNode* b, GList* exclude_props)
   if (json_object_get_size(object_a) != json_object_get_size(object_b))
     return FALSE;
 
+  gboolean is_equal = TRUE;
+
   GList* members = json_object_get_members(object_a);
 
   GList* member;
@@ -152,10 +158,15 @@ json_object_equal(JsonNode* a, JsonNode* b, GList* exclude_props)
     JsonNode* value_b = json_object_get_member(object_b, member->data);
     
     if (!json_node_equal(value_a, value_b, exclude_props))
-      return FALSE;
+    {
+      is_equal = FALSE;
+      break;
+    }
   }
 
-  return TRUE;
+  g_list_free(members);
+
+  return is_equal;
 }
 
 

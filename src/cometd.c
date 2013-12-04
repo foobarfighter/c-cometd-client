@@ -278,7 +278,7 @@ cometd_unsubscribe(const cometd* h, cometd_subscription* s)
   if (cometd_is_meta_channel(channel) == FALSE &&
       cometd_has_listener(h, channel) == FALSE)
   {
-    JsonNode* node = cometd_new_unsubscribe_message(h, s->channel);
+    JsonNode* node = cometd_new_unsubscribe_message(h, channel);
 
     if (node != NULL)
     {

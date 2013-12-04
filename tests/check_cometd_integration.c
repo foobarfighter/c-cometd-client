@@ -178,6 +178,8 @@ START_TEST (test_cometd_unsubscribe_success)
        \"channel\": \"/meta/unsubscribe\",  \
        \"successful\": true,                \
        \"subscription\": \"/foo/bar/baz\" }");
+
+  g_list_free(excludes);
 }
 END_TEST
 
@@ -223,9 +225,7 @@ START_TEST (test_cometd_send_and_receive_message){
        \"data\": { \"message\": \"hey now\" } }");
 
   json_node_free(message);
-
-  //code = cometd_unsubscribe(g_instance, s);
-  //ck_assert_int_eq(COMETD_SUCCESS, code);
+  g_list_free(excludes);
 }
 END_TEST
 
