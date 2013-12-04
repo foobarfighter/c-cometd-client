@@ -265,23 +265,22 @@ failed_node:
 int
 cometd_unsubscribe(const cometd* h, cometd_subscription* s)
 {
-  int code = COMETD_SUCCESS;
+  int code = ECOMETD_UNKNOWN;
 
   JsonNode* node = cometd_new_unsubscribe_message(h, s->channel);
   if (node == NULL)
     goto failed_node;
 
-  // FIXME: We should only be unsubscribing with the server
-  // when there are no remaining local listeners
-  code = cometd_transport_send(h, node);
-  if (code != COMETD_SUCCESS)
-    goto failed_send;
+  char channel[COMETD_MAX_CHANNEL_LEN] = { 0 };
+  strcpy(channel, s->channel);
 
   code = cometd_remove_listener(h, s);
   if (code != COMETD_SUCCESS)
-    goto failed_remove;
+    goto failed_send;
 
-failed_remove:
+  if (cometd_has_listener(h, channel) == FALSE)
+    code = cometd_transport_send(h, node);
+
 failed_send:
   json_node_free(node);
 failed_node:
@@ -326,7 +325,7 @@ _negotiate_transport(const cometd* h, JsonObject* obj)
     // Loop through the list of connection types supported by the server 
     while (server_entry){
       if (!strcmp(transport->name, json_node_get_string(server_entry->data))){
-        h->conn->transport = transport;
+        cometd_conn_set_transport(h, transport);
         found = 1;
         break;
       }
@@ -432,6 +431,16 @@ cometd_conn_set_client_id(const cometd* h, const char* id)
   g_assert(id != NULL);
 
   strcpy(h->conn->client_id, id);
+}
+
+void
+cometd_conn_set_transport(const cometd* h, cometd_transport* t)
+{
+  g_assert(h != NULL);
+  g_assert(h->conn != NULL);
+  g_assert(t != NULL);
+
+  h->conn->transport = t;
 }
 
 void
@@ -784,6 +793,22 @@ cometd_remove_listener(const cometd* h,
   free(subscription);
 
   return COMETD_SUCCESS;
+}
+
+gboolean
+cometd_has_listener(const cometd* h, char* channel)
+{
+  g_assert(h != NULL);
+  g_assert(h->conn != NULL);
+  g_assert(h->conn->subscriptions != NULL);
+
+  g_return_val_if_fail(channel != NULL, FALSE);
+  
+  GList* list;
+  
+  list = (GList*) g_hash_table_lookup(h->conn->subscriptions, channel);
+  
+  return g_list_length(list) == 0 ? FALSE : TRUE;
 }
 
 int

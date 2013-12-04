@@ -11,8 +11,23 @@
 #include "test_helper.h"
 
 static cometd* g_instance = NULL;
-static JsonNode* test_transport_send(const cometd* h, JsonNode* node) { return NULL; }
-static JsonNode* test_transport_recv(const cometd* h) { return NULL; }
+
+static guint test_transport_send_calls = 0;
+static guint test_transport_recv_calls = 0;
+
+static JsonNode* test_transport_send(const cometd* h, JsonNode* node) {
+  test_transport_send_calls++;
+  return NULL;
+}
+
+static JsonNode* test_transport_recv(const cometd* h) {
+  test_transport_recv_calls++;
+  return NULL;
+}
+
+static int test_empty_handler(const cometd* h, JsonNode* message) {
+  return COMETD_SUCCESS;
+}
 
 static cometd_transport TEST_TRANSPORT = {
   "test-transport",
@@ -24,6 +39,9 @@ static cometd_transport TEST_TRANSPORT = {
 static void setup (void)
 {
   log_clear();
+  test_transport_recv_calls = 0;
+  test_transport_send_calls = 0;
+
   g_instance = cometd_new();
   cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
 }
@@ -170,6 +188,25 @@ START_TEST (test_cometd_new_publish_message)
 }
 END_TEST
 
+START_TEST (test_cometd_unsubscribe)
+{
+  cometd_conn_set_client_id(g_instance, "testid");
+  cometd_conn_set_transport(g_instance, &TEST_TRANSPORT);
+
+  cometd_subscription *s1, *s2;
+
+  s1 = cometd_subscribe(g_instance, "/foo/bar/baz", test_empty_handler);
+  s2 = cometd_subscribe(g_instance, "/foo/bar/baz", test_empty_handler);
+
+  ck_assert_int_eq(2, test_transport_send_calls);
+
+  cometd_unsubscribe(g_instance, s1);
+  cometd_unsubscribe(g_instance, s2);
+
+  ck_assert_int_eq(3, test_transport_send_calls);
+}
+END_TEST
+
 START_TEST (test_cometd_error)
 {
   char* message = "hey now";
@@ -241,6 +278,7 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_new_subscribe_message);
   tcase_add_test (tc_unit, test_cometd_new_unsubscribe_message);
   tcase_add_test (tc_unit, test_cometd_new_publish_message);
+  tcase_add_test (tc_unit, test_cometd_unsubscribe);
   tcase_add_test (tc_unit, test_cometd_transport);
   tcase_add_test (tc_unit, test_cometd_error);
   tcase_add_test (tc_unit, test_cometd_conn_status);
