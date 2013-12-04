@@ -17,12 +17,12 @@ static guint test_transport_recv_calls = 0;
 
 static JsonNode* test_transport_send(const cometd* h, JsonNode* node) {
   test_transport_send_calls++;
-  return NULL;
+  return cometd_json_str2node("[{ \"successful\"; true }]");
 }
 
 static JsonNode* test_transport_recv(const cometd* h) {
   test_transport_recv_calls++;
-  return NULL;
+  return json_node_new(JSON_NODE_ARRAY);
 }
 
 static int test_empty_handler(const cometd* h, JsonNode* message) {
@@ -207,6 +207,21 @@ START_TEST (test_cometd_unsubscribe)
 }
 END_TEST
 
+START_TEST (test_cometd_meta_subscriptions)
+{
+  cometd_conn_set_client_id(g_instance, "testid");
+  cometd_conn_set_transport(g_instance, &TEST_TRANSPORT);
+
+  cometd_subscription *s1;
+
+  s1 = cometd_subscribe(g_instance, "/meta/connect", test_empty_handler);
+  ck_assert_int_eq(0, test_transport_send_calls);
+
+  cometd_unsubscribe(g_instance, s1); 
+  ck_assert_int_eq(0, test_transport_send_calls);
+}
+END_TEST
+
 START_TEST (test_cometd_error)
 {
   char* message = "hey now";
@@ -219,6 +234,15 @@ START_TEST (test_cometd_error)
 
   ck_assert_int_eq(code, error->code);
   ck_assert_str_eq(message, error->message);
+}
+END_TEST
+
+START_TEST (test_cometd_is_meta_channel)
+{
+  fail_unless(cometd_is_meta_channel("/meta/*"));
+  fail_unless(cometd_is_meta_channel("/meta/connect"));
+  fail_if(cometd_is_meta_channel("/foo"));
+  fail_if(cometd_is_meta_channel(NULL));
 }
 END_TEST
 
@@ -279,8 +303,10 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_new_unsubscribe_message);
   tcase_add_test (tc_unit, test_cometd_new_publish_message);
   tcase_add_test (tc_unit, test_cometd_unsubscribe);
+  tcase_add_test (tc_unit, test_cometd_meta_subscriptions);
   tcase_add_test (tc_unit, test_cometd_transport);
   tcase_add_test (tc_unit, test_cometd_error);
+  tcase_add_test (tc_unit, test_cometd_is_meta_channel);
   tcase_add_test (tc_unit, test_cometd_conn_status);
   tcase_add_test (tc_unit, test_cometd_add_listener);
   suite_add_tcase (s, tc_unit);

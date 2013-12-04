@@ -244,21 +244,22 @@ cometd_subscribe(const cometd* h,
                  char* channel,
                  cometd_callback handler)
 {
+  int code = COMETD_SUCCESS;
   cometd_subscription* s = NULL;
 
-  JsonNode* node = cometd_new_subscribe_message(h, channel);
-  if (node == NULL)
-    goto failed_node;
+  if (cometd_is_meta_channel(channel) == FALSE)
+  {
+    JsonNode* node = cometd_new_subscribe_message(h, channel);
+    if (node != NULL)
+    {
+      code = cometd_transport_send(h, node);
+      json_node_free(node);
+    }
+  }
 
-  int code = cometd_transport_send(h, node);
-  if (code != COMETD_SUCCESS)
-    goto failed_send;
+  if (code == COMETD_SUCCESS)
+    s = cometd_add_listener(h, channel, handler);
 
-  s = cometd_add_listener(h, channel, handler);
-
-failed_send:
-  json_node_free(node);
-failed_node:
   return s;
 }
 
@@ -274,7 +275,8 @@ cometd_unsubscribe(const cometd* h, cometd_subscription* s)
 
   code = cometd_remove_listener(h, s);
 
-  if (cometd_has_listener(h, channel) == FALSE)
+  if (cometd_is_meta_channel(channel) == FALSE &&
+      cometd_has_listener(h, channel) == FALSE)
   {
     JsonNode* node = cometd_new_unsubscribe_message(h, s->channel);
 
@@ -451,6 +453,13 @@ cometd_conn_clear_status(const cometd* h)
   assert(h->conn != NULL);
 
   h->conn->state = COMETD_UNINITIALIZED;
+}
+
+gboolean
+cometd_is_meta_channel(const char* channel)
+{
+  g_return_val_if_fail(channel != NULL, FALSE);
+  return strncmp(channel, "/meta", 5) == 0 ? TRUE : FALSE;
 }
 
 int

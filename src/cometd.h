@@ -187,6 +187,7 @@ void cometd_process_handshake(const cometd* h, JsonNode* root);
 
 // other
 int               cometd_error(const cometd* h, int code, char* message);
+gboolean          cometd_is_meta_channel(const char* channel);
 cometd_error_st*  cometd_last_error(const cometd* h);
 long              cometd_conn_status(const cometd* h);
 void              cometd_conn_set_status(const cometd* h, long status);
