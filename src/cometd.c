@@ -269,8 +269,7 @@ cometd_unsubscribe(const cometd* h, cometd_subscription* s)
   int code = ECOMETD_UNKNOWN;
   JsonNode* node;
 
-  // save off channel because it gets free'd by
-  // cometd_remove_listener
+  // save off channel because it gets free'd by cometd_remove_listener
   strcpy(channel, s->channel);
 
   code = cometd_remove_listener(h, s);
