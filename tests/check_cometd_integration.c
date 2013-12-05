@@ -1,6 +1,7 @@
 #include <check.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <cometd.h>
 #include <cometd_json.h>
 
@@ -96,9 +97,18 @@ START_TEST (test_cometd_handshake_success)
 
   int code = cometd_handshake(g_instance, NULL);
   ck_assert_int_eq(COMETD_SUCCESS, code);
-  fail_unless(strcmp(g_instance->conn->transport->name, "long-polling") == 0);
-  fail_unless(g_instance->conn->client_id != NULL);
-  fail_unless(cometd_conn_status(g_instance) & COMETD_HANDSHAKE_SUCCESS);
+  
+  cometd_transport* t = cometd_current_transport(g_instance);
+  fail_if(t == NULL);
+
+  // CK_FORK: This is a really ghetto way of continuing to run this suite
+  // in CK_FORK=no mode.  fail_if doesn't break flow control if CK_FORK=no
+  // because check has no way of catching the assertion and continuing to run.
+  if (t != NULL) {
+    int ret = strcmp(t->name, "long-polling");
+    fail_unless(g_instance->conn->client_id != NULL);
+    fail_unless(cometd_conn_status(g_instance) & COMETD_HANDSHAKE_SUCCESS);
+  }
 }
 END_TEST
 
