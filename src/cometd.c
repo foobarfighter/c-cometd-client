@@ -288,14 +288,12 @@ cometd_subscribe(const cometd* h,
 int
 cometd_unsubscribe(const cometd* h, cometd_subscription* s)
 {
+  g_return_val_if_fail(s != NULL, ECOMETD_UNKNOWN);
+  g_return_val_if_fail(s->channel != NULL, ECOMETD_UNKNOWN);
+
   char channel[COMETD_MAX_CHANNEL_LEN] = { 0 };
   int code = ECOMETD_UNKNOWN;
   JsonNode* node;
-
-  // save off channel because it gets free'd by cometd_remove_listener
-  strcpy(channel, s->channel);
-
-  code = cometd_remove_listener(h, s);
 
   if (cometd_is_meta_channel(channel) == FALSE &&
       cometd_has_listener(h, channel) == FALSE)
@@ -308,6 +306,10 @@ cometd_unsubscribe(const cometd* h, cometd_subscription* s)
       json_node_free(node);
     }
   }
+
+  // don't remove the local listener if the remote call failed
+  if (code != COMETD_SUCCESS)
+    code = cometd_remove_listener(h, s);
 
   return code;
 }
@@ -370,11 +372,8 @@ _negotiate_transport(const cometd* h, JsonObject* obj)
 
 char*
 _extract_client_id(const cometd* h, JsonObject* node){
-  return strncpy(
-    h->conn->client_id,
-    json_object_get_string_member(node, "clientId"),
-    COMETD_MAX_CLIENT_ID_LEN
-  );
+  cometd_conn_set_client_id(h, json_object_get_string_member(node, "clientId"));
+  return h->conn->client_id;
 }
 
 int
@@ -450,12 +449,24 @@ cometd_conn_set_status(const cometd* h, long status)
   h->conn->state = cometd_conn_status(h) | status;
 }
 
+char*
+cometd_conn_client_id(const cometd* h)
+{
+  g_return_val_if_fail(h != NULL, NULL);
+  g_return_val_if_fail(h->conn != NULL, NULL);
+
+  gboolean has_id = cometd_conn_is_status(h, COMETD_HANDSHAKE_SUCCESS);
+
+  return has_id ? h->conn->client_id : NULL;
+}
+
 void
 cometd_conn_set_client_id(const cometd* h, const char* id)
 {
   g_assert(id != NULL);
+  g_assert(strnlen(id, COMETD_MAX_CLIENT_ID_LEN) < COMETD_MAX_CLIENT_ID_LEN);
 
-  strcpy(h->conn->client_id, id);
+  strncpy(h->conn->client_id, id, COMETD_MAX_CLIENT_ID_LEN - 1);
 }
 
 void
@@ -550,7 +561,6 @@ cometd_transport*
 cometd_current_transport(const cometd* h){
   g_return_val_if_fail(h != NULL, NULL);
   g_return_val_if_fail(h->conn != NULL, NULL);
-  g_return_val_if_fail(h->conn->transport != NULL, NULL);
   
   return h->conn->transport;
 }
@@ -566,7 +576,7 @@ cometd_new_connect_message(const cometd* h){
   json_object_set_int_member   (obj, COMETD_MSG_ID_FIELD,      seed);
   json_object_set_string_member(obj, COMETD_MSG_CHANNEL_FIELD, COMETD_CHANNEL_META_CONNECT);
   json_object_set_string_member(obj, "connectionType",         connection_type);
-  json_object_set_string_member(obj, "clientId",               h->conn->client_id);
+  json_object_set_string_member(obj, "clientId",               cometd_conn_client_id(h));
 
   json_node_take_object(root, obj);
 
@@ -627,7 +637,7 @@ cometd_new_publish_message(const cometd* h,
 
   json_object_set_string_member(obj,
                                 COMETD_MSG_CLIENT_ID_FIELD,
-                                h->conn->client_id);
+                                cometd_conn_client_id(h));
 
   json_object_set_member(obj,
                          COMETD_MSG_DATA_FIELD,
@@ -655,7 +665,7 @@ cometd_new_subscribe_message(const cometd* h, const char* channel)
 
   json_object_set_string_member(obj,
                                 COMETD_MSG_CLIENT_ID_FIELD,
-                                h->conn->client_id);
+                                cometd_conn_client_id(h));
 
   json_object_set_string_member(obj,
                                 COMETD_MSG_SUBSCRIPTION_FIELD,
@@ -683,7 +693,7 @@ cometd_new_unsubscribe_message(const cometd* h, const char* channel)
 
   json_object_set_string_member(obj,
                                 COMETD_MSG_CLIENT_ID_FIELD,
-                                h->conn->client_id);
+                                cometd_conn_client_id(h));
 
   json_object_set_string_member(obj,
                                 COMETD_MSG_SUBSCRIPTION_FIELD,
