@@ -849,7 +849,7 @@ cometd_listener_count(const cometd* h, char* channel)
   g_assert(h->conn != NULL);
   g_assert(h->conn->subscriptions != NULL);
 
-  g_return_val_if_fail(channel != NULL, FALSE);
+  g_return_val_if_fail(channel != NULL, 0);
   
   GList* list;
   
