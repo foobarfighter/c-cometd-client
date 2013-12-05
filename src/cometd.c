@@ -291,12 +291,17 @@ cometd_unsubscribe(const cometd* h, cometd_subscription* s)
   g_return_val_if_fail(s != NULL, ECOMETD_UNKNOWN);
   g_return_val_if_fail(s->channel != NULL, ECOMETD_UNKNOWN);
 
-  char channel[COMETD_MAX_CHANNEL_LEN] = { 0 };
+  const char* channel = s->channel;
   int code = ECOMETD_UNKNOWN;
   JsonNode* node;
 
+  /*
+    We can't unsubscribe from a remote meta channel and we only
+    want to remotely unsubscribe if this is the last remaining
+    listener.
+  */
   if (cometd_is_meta_channel(channel) == FALSE &&
-      cometd_has_listener(h, channel) == FALSE)
+      cometd_listener_count(h, channel) == 1)
   {
     JsonNode* node = cometd_new_unsubscribe_message(h, channel);
 
@@ -837,8 +842,8 @@ cometd_remove_listener(const cometd* h,
   return COMETD_SUCCESS;
 }
 
-gboolean
-cometd_has_listener(const cometd* h, char* channel)
+int
+cometd_listener_count(const cometd* h, char* channel)
 {
   g_assert(h != NULL);
   g_assert(h->conn != NULL);
@@ -850,7 +855,7 @@ cometd_has_listener(const cometd* h, char* channel)
   
   list = (GList*) g_hash_table_lookup(h->conn->subscriptions, channel);
   
-  return g_list_length(list) == 0 ? FALSE : TRUE;
+  return g_list_length(list);
 }
 
 int
