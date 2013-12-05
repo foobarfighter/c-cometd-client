@@ -36,17 +36,31 @@ log_size(void)
 }
 
 void
-wait_for_message(gint timeout, GList* excludes, char* json)
+wait_for_message(glong timeout_secs, GList* excludes, char* json)
 {
   JsonNode* node;
   JsonNode* message = cometd_json_str2node(json);
+
+  GTimeVal now;
+  g_get_current_time(&now);
 
   while (1)
   {
     g_mutex_lock(&log_mutex);
 
+    GTimeVal remaining_wait;
+    remaining_wait.tv_sec  = now.tv_sec + timeout_secs;
+    remaining_wait.tv_usec  = now.tv_usec;
+
     while (g_queue_is_empty(log) == TRUE)
-      g_cond_wait(&log_cond, &log_mutex);
+      // FIXME: breaking the wait loop innaccurately if a timeout occurs
+      if (g_cond_timed_wait(&log_cond, &log_mutex, &remaining_wait) != TRUE)
+        break;
+
+    if (g_queue_is_empty(log) == TRUE) {
+      g_mutex_unlock(&log_mutex);
+      break;
+    }
 
     node = (JsonNode*) g_queue_pop_head(log);
 

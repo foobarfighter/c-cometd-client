@@ -172,7 +172,7 @@ START_TEST (test_cometd_unsubscribe_success)
   excludes = g_list_prepend(excludes, "clientId");
   excludes = g_list_prepend(excludes, "id");
 
-  wait_for_message(100, excludes,
+  wait_for_message(5, excludes,
     "{ \"id\": 4,                           \
        \"clientId\": \"PLACEHOLDER\",       \
        \"channel\": \"/meta/unsubscribe\",  \
@@ -219,7 +219,7 @@ START_TEST (test_cometd_send_and_receive_message){
   GList* excludes = NULL;
   excludes = g_list_prepend(excludes, "id");
 
-  wait_for_message(100, excludes,
+  wait_for_message(5, excludes,
     "{ \"id\": 4, \
        \"channel\": \"/echo/message/test\", \
        \"data\": { \"message\": \"hey now\" } }");
