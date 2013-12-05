@@ -199,12 +199,34 @@ cometd_recv_loop(gpointer data)
 void
 cometd_listen(const cometd* h)
 {
-  while (!cometd_conn_is_status(h, COMETD_DISCONNECTED))
-  {
-    g_mutex_lock(h->conn->inbox_mutex);
+  // TODO: Assert mutex, cond, and connection
 
-    while (g_queue_is_empty(h->conn->inbox) == TRUE)
-      g_cond_wait(h->conn->inbox_cond, h->conn->inbox_mutex);
+  GTimeVal wait_timeout;
+  GTimeVal now;
+
+  GQueue* inbox = h->conn->inbox;
+  GMutex* m  = h->conn->inbox_mutex;
+  GCond*  cv = h->conn->inbox_cond;
+
+  while (cometd_conn_is_status(h, COMETD_DISCONNECTED) == FALSE &&
+         cometd_conn_is_status(h, COMETD_UNINITIALIZED) == FALSE)
+  {
+    g_mutex_lock(m);
+
+    g_get_current_time(&now);
+    g_time_val_add(&now, 100000);  // 100ms
+  
+    // Provides an exit in the event that we never receive a message
+    // In a scenario where a client connects and then immediately
+    // disconnects without a server ack (maybe in another thread) then
+    // we will wait forever on the inbox mutex.
+    //
+    // TODO: Another way to do this might be to check the connection status
+    // in this loop and also signal after status is set in the disconnect
+    // method.
+    while (g_queue_is_empty(inbox) == TRUE)
+      if (g_cond_timed_wait(cv, m, &now) == FALSE)
+        break;
 
     JsonNode* node;
     JsonObject* message;
@@ -219,7 +241,7 @@ cometd_listen(const cometd* h)
       json_node_free(node);
     }
 
-    g_mutex_unlock(h->conn->inbox_mutex);
+    g_mutex_unlock(m);
   }
 }
 
