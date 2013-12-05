@@ -171,7 +171,7 @@ cometd_subscription* cometd_add_listener(const cometd* h,
                                          char * channel,
                                          cometd_callback cb);
 
-gboolean cometd_has_listener(const cometd*, char* channel);
+int cometd_listener_count(const cometd*, char* channel);
 
 int cometd_remove_listener(const cometd* h,
                            cometd_subscription* subscription);
