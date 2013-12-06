@@ -922,13 +922,13 @@ cometd_channel_subscriptions(const cometd* h, const char* channel)
       subscriptions = g_list_prepend(subscriptions, s->data);
   }
 
-  cometd_free_channel_matches(channels);
+  cometd_channel_matches_free(channels);
 
   return subscriptions;
 }
 
 void
-cometd_free_channel_matches(GList* matches)
+cometd_channel_matches_free(GList* matches)
 {
   g_list_free_full(matches, g_free);
 }

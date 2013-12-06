@@ -189,7 +189,7 @@ void cometd_process_handshake(const cometd* h, JsonNode* root);
 // channels
 gboolean cometd_channel_is_wildcard(const char* channel);
 GList*   cometd_channel_matches(const char* channel);
-void     cometd_free_channel_matches(GList* matches);
+void     cometd_channel_matches_free(GList* matches);
 GList*   cometd_channel_subscriptions(const cometd* h, const char* channel);
 
 // other
