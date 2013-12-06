@@ -890,6 +890,8 @@ cometd_fire_listeners(const cometd* h,
     }
   }
 
+  g_list_free(list);
+
   return COMETD_SUCCESS;
 error:
   return ECOMETD_UNKNOWN;

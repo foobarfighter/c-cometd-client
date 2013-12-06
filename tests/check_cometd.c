@@ -304,6 +304,8 @@ START_TEST (test_cometd_fire_listeners_wildcard)
   ck_assert_int_eq(1, log_size());
   cometd_fire_listeners(g_instance, "/quux/wat", message);
   ck_assert_int_eq(2, log_size());
+
+  json_node_free(message);
 }
 END_TEST
 
@@ -325,6 +327,8 @@ START_TEST (test_cometd_channel_subscriptions)
   fail_if(g_list_find(subscriptions, s2) == NULL);
   fail_if(g_list_find(subscriptions, s3) == NULL);
   fail_if(g_list_find(subscriptions, s4) == NULL);
+
+  g_list_free(subscriptions);
 }
 END_TEST
 
@@ -358,6 +362,9 @@ START_TEST (test_cometd_channel_matches)
   fail_if(g_list_find_custom(c2, "/**", (GCompareFunc)strcmp) == NULL);
   fail_if(g_list_find_custom(c2, "/*", (GCompareFunc)strcmp) == NULL);
   fail_if(g_list_find_custom(c2, "/", (GCompareFunc)strcmp) == NULL);
+
+  cometd_channel_matches_free(c1);
+  cometd_channel_matches_free(c2);
 }
 END_TEST
 
