@@ -60,6 +60,7 @@ typedef enum {
 // Other
 #define COMETD_MAX_CLIENT_ID_LEN 128
 #define COMETD_MAX_CHANNEL_LEN   512
+#define COMETD_MAX_CHANNEL_PARTS 254
 
 // Forward declaration stuff
 struct _cometd;
@@ -171,7 +172,7 @@ cometd_subscription* cometd_add_listener(const cometd* h,
                                          char * channel,
                                          cometd_callback cb);
 
-int cometd_listener_count(const cometd*, char* channel);
+int cometd_listener_count(const cometd* h, const char* channel);
 
 int cometd_remove_listener(const cometd* h,
                            cometd_subscription* subscription);
@@ -185,6 +186,12 @@ void cometd_process_payload  (const cometd* h, JsonNode* root);
 void cometd_process_message(JsonArray *array, guint idx, JsonNode* node, gpointer data);
 void cometd_process_handshake(const cometd* h, JsonNode* root);
 
+// channels
+gboolean cometd_channel_is_wildcard(const char* channel);
+GList*   cometd_channel_matches(const char* channel);
+void     cometd_free_channel_matches(GList* matches);
+GList*   cometd_channel_subscriptions(const cometd* h, const char* channel);
+
 // other
 int               cometd_error(const cometd* h, int code, char* message);
 gboolean          cometd_is_meta_channel(const char* channel);
@@ -196,6 +203,7 @@ void              cometd_conn_clear_status(const cometd* h);
 char*             cometd_conn_client_id(const cometd* h);
 void              cometd_conn_set_client_id(const cometd* h, const char *id);
 void              cometd_conn_set_transport(const cometd* h, cometd_transport* t);
+GHashTable*       cometd_conn_subscriptions(const cometd* h);
 int               cometd_init_loop(const cometd* h);
 void              cometd_listen(const cometd* h);
 

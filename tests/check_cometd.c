@@ -289,6 +289,85 @@ START_TEST (test_cometd_add_listener)
 }
 END_TEST
 
+START_TEST (test_cometd_fire_listeners_wildcard)
+{
+  JsonNode* message = cometd_json_str2node("{}");
+
+  cometd_subscription *s1, *s2;
+
+  s1 = cometd_add_listener(g_instance, "/foo/**", log_handler);
+  s2 = cometd_add_listener(g_instance, "/quux/*", log_handler);
+
+  cometd_fire_listeners(g_instance, "/foo/bar/baz", message);
+  ck_assert_int_eq(1, log_size());
+  cometd_fire_listeners(g_instance, "/quux/wat/wut", message);
+  ck_assert_int_eq(1, log_size());
+  cometd_fire_listeners(g_instance, "/quux/wat", message);
+  ck_assert_int_eq(2, log_size());
+}
+END_TEST
+
+START_TEST (test_cometd_channel_subscriptions)
+{
+  cometd_subscription *s1, *s2, *s3, *s4;
+
+  s1 = cometd_add_listener(g_instance, "/foo/*", test_empty_handler);
+  s2 = cometd_add_listener(g_instance, "/**", test_empty_handler);
+  s3 = cometd_add_listener(g_instance, "/foo/bar/baz/*", test_empty_handler);
+  s4 = cometd_add_listener(g_instance, "/foo/bar/baz/bang", test_empty_handler);
+
+  GList* subscriptions = cometd_channel_subscriptions(g_instance,
+                                                      "/foo/bar/baz/bang");
+
+  fail_if(subscriptions == NULL);
+  ck_assert_int_eq(3, g_list_length(subscriptions));
+
+  fail_if(g_list_find(subscriptions, s2) == NULL);
+  fail_if(g_list_find(subscriptions, s3) == NULL);
+  fail_if(g_list_find(subscriptions, s4) == NULL);
+}
+END_TEST
+
+static void
+dump_channel_matches(const char* c, GList* channels)
+{
+  GList* channel;
+  printf("dumping matching channels for: %s\n", c);
+  for (channel = channels; channel; channel = g_list_next(channel))
+  {
+    printf("matching channel: %s\n", (char*) channel->data);
+  }
+  printf("\n\n");
+}
+
+START_TEST (test_cometd_channel_matches)
+{
+  GList* c1 = cometd_channel_matches("/foo/bar/baz");
+  dump_channel_matches("/foo/bar/baz", c1);
+
+  ck_assert_int_eq(5, g_list_length(c1));
+  fail_if(g_list_find_custom(c1, "/**", (GCompareFunc)strcmp) == NULL);
+  fail_if(g_list_find_custom(c1, "/foo/**", (GCompareFunc)strcmp) == NULL);
+  fail_if(g_list_find_custom(c1, "/foo/bar/*", (GCompareFunc)strcmp) == NULL);
+  fail_if(g_list_find_custom(c1, "/foo/bar/**", (GCompareFunc)strcmp) == NULL);
+  fail_if(g_list_find_custom(c1, "/foo/bar/baz", (GCompareFunc)strcmp) == NULL);
+
+  GList* c2 = cometd_channel_matches("/");
+  dump_channel_matches("/", c2);
+
+  fail_if(g_list_find_custom(c2, "/**", (GCompareFunc)strcmp) == NULL);
+  fail_if(g_list_find_custom(c2, "/*", (GCompareFunc)strcmp) == NULL);
+  fail_if(g_list_find_custom(c2, "/", (GCompareFunc)strcmp) == NULL);
+}
+END_TEST
+
+START_TEST (test_cometd_channel_is_wildcard)
+{
+  fail_unless(cometd_channel_is_wildcard("/meta/**"));
+  fail_if(cometd_channel_is_wildcard("/meta"));
+}
+END_TEST
+
 Suite* make_cometd_unit_suite (void)
 {
   Suite *s = suite_create ("Cometd");
@@ -309,6 +388,10 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_is_meta_channel);
   tcase_add_test (tc_unit, test_cometd_conn_status);
   tcase_add_test (tc_unit, test_cometd_add_listener);
+  tcase_add_test (tc_unit, test_cometd_fire_listeners_wildcard);
+  tcase_add_test (tc_unit, test_cometd_channel_subscriptions);
+  tcase_add_test (tc_unit, test_cometd_channel_matches);
+  tcase_add_test (tc_unit, test_cometd_channel_is_wildcard);
   suite_add_tcase (s, tc_unit);
 
   return s;

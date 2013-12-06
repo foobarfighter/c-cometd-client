@@ -500,6 +500,15 @@ cometd_is_meta_channel(const char* channel)
   return strncmp(channel, "/meta", 5) == 0 ? TRUE : FALSE;
 }
 
+GHashTable* cometd_conn_subscriptions(const cometd* h)
+{
+  g_assert(h != NULL);
+  g_assert(h->conn != NULL);
+  g_assert(h->conn->subscriptions != NULL);
+
+  return h->conn->subscriptions;
+}
+
 int
 cometd_error(const cometd* h, int code, char* message)
 {
@@ -843,7 +852,7 @@ cometd_remove_listener(const cometd* h,
 }
 
 int
-cometd_listener_count(const cometd* h, char* channel)
+cometd_listener_count(const cometd* h, const char* channel)
 {
   g_assert(h != NULL);
   g_assert(h->conn != NULL);
@@ -867,8 +876,7 @@ cometd_fire_listeners(const cometd* h,
   g_return_val_if_fail(h->conn->subscriptions != NULL, ECOMETD_UNKNOWN);
   g_return_val_if_fail(channel != NULL, ECOMETD_UNKNOWN);
 
-  GList* list = (GList*) g_hash_table_lookup(h->conn->subscriptions,
-                                             channel);
+  GList* list = cometd_channel_subscriptions(h, channel);
   
   // If the list is NULL then, then there are no subscriptions.
   if (list == NULL) { return COMETD_SUCCESS; }
@@ -885,5 +893,85 @@ cometd_fire_listeners(const cometd* h,
   return COMETD_SUCCESS;
 error:
   return ECOMETD_UNKNOWN;
+}
+
+gboolean
+cometd_channel_is_wildcard(const char* channel)
+{
+  g_assert(channel != NULL);
+  return *(channel + strnlen(channel, COMETD_MAX_CHANNEL_LEN) - 1) == '*';
+}
+
+
+GList*
+cometd_channel_subscriptions(const cometd* h, const char* channel)
+{
+  g_assert(!cometd_channel_is_wildcard(channel));
+
+  GList* subscriptions = NULL;
+  GHashTable* map = cometd_conn_subscriptions(h);
+  GList* channels = cometd_channel_matches(channel);
+
+  GList* c;
+  for (c = channels; c; c = g_list_next(c))
+  {
+    GList* list = (GList*) g_hash_table_lookup(map, c->data);
+
+    GList* s = NULL;
+    for (s = list; s; s = g_list_next(s))
+      subscriptions = g_list_prepend(subscriptions, s->data);
+  }
+
+  cometd_free_channel_matches(channels);
+
+  return subscriptions;
+}
+
+void
+cometd_free_channel_matches(GList* matches)
+{
+  g_list_free_full(matches, g_free);
+}
+
+GList* cometd_channel_matches(const char* channel)
+{
+  g_return_val_if_fail(channel != NULL, NULL);
+
+  GList* channels  = NULL;
+  char** parts     = g_strsplit(channel, "/", 0);
+  guint  parts_len = g_strv_length(parts);
+
+  if (parts_len > COMETD_MAX_CHANNEL_PARTS) 
+    goto free_parts;
+
+  // 254+2 because tmp needs space for (wildcard part + NULL)
+  char* tmp[COMETD_MAX_CHANNEL_PARTS+2] = { NULL };
+
+  guint i;
+  for (i = 0; i < parts_len; i++)
+  {
+    tmp[i]   = parts[i];
+
+    // add double wildcard
+    if (i < parts_len - 1)
+    {
+      tmp[i+1] = "**";
+      channels = g_list_prepend(channels, g_strjoinv("/", tmp));
+    // add base channel
+    } else {
+      channels = g_list_prepend(channels, g_strjoinv("/", tmp));
+    }
+    
+    // add single wildcard
+    if (i == parts_len - 2)
+    {
+      tmp[i+1] = "*";
+      channels = g_list_prepend(channels, g_strjoinv("/", tmp));
+    }
+  }
+
+free_parts:
+  g_strfreev(parts);
+  return channels;
 }
 
