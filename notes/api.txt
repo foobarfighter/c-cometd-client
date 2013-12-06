@@ -1,0 +1,83 @@
+core
+- cometd_new
+- cometd_destroy
+- cometd_handshake
+- cometd_publish
+- cometd_subscribe
+- cometd_unsubscribe
+- cometd_disconnect
+- cometd_connect
+- cometd_listen
+- cometd_error
+- cometd_last_error
+
+inbox (replaces process methods)
+- cometd_inbox* cometd_inbox_new(cometd_loop* q)
+- cometd_inbox_push
+- cometd_inbox_push_msg
+- cometd_inbox_take
+- cometd_inbox_destroy(GQueue* q)
+
+msg
+- cometd_msg_new(COMETD_MSG_TYPE)
+- cometd_msg_new_base
+- cometd_msg_new_connect
+- cometd_msg_new_handshake
+- cometd_msg_new_subscribe
+- cometd_msg_new_unsubscribe
+- cometd_msg_new_publish
+
+channel
+- cometd_channel_is_meta
+- cometd_channel_is_wildcard
+- cometd_channel_subscriptions
+- cometd_channel_matches
+- cometd_channel_matches_free
+
+transport
+- cometd_transport_new(TCOMETD_LP) # macro
+- cometd_transport_current
+- cometd_transport_find
+- cometd_transport_register
+- cometd_transport_unregister
+- cometd_transport_destroy
+
+listener
+- cometd_listener_add
+- cometd_listener_remove
+- cometd_listener_fire_all
+- cometd_listener_count
+
+conn
+- cometd_conn_status
+- cometd_conn_set_status
+- cometd_conn_is_status
+- cometd_conn_clear_status
+- cometd_conn_client_id
+- cometd_conn_set_client_id
+- cometd_conn_set_transport
+- cometd_conn_subscriptions
+
+- loop
+- cometd_loop_new(LCOMETD_GTHREAD)
+- cometd_loop_start
+- cometd_loop_stop
+- cometd_loop_destroy
+
+debug
+- cometd_debug_handler
+
+loops/gthread
+- cometd_loop_
+
+http
+- http_json_post
+
+transports/lp
+- cometd_t_lp_new
+
+transports/websockets
+- cometd_t_websockets_new
+
+transports/jsonp
+- cometd_t_jsonp_new
