@@ -77,12 +77,15 @@ START_TEST (test_cometd_connect_success)
 }
 END_TEST
 
-static int test_init_fail_loop(const cometd* h) { return 1; }
+static unsigned int fail_loop_start(cometd_loop* loop) { return 1; }
 
 START_TEST (test_cometd_connect_fail_init_loop)
 {
+  cometd_loop fail_loop;
+  fail_loop.start = fail_loop_start;
+
   cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
-  cometd_configure(g_instance, COMETDOPT_INIT_LOOPFUNC, test_init_fail_loop);
+  cometd_configure(g_instance, COMETDOPT_LOOP, &fail_loop);
 
   int code = cometd_connect(g_instance);
   fail_unless(cometd_conn_is_status(g_instance, COMETD_HANDSHAKE_SUCCESS));

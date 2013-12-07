@@ -9,7 +9,11 @@ add_library(cometd cometd.c
                    cometd_json.c
                    cometd_msg.c
                    http.c
-                   transport_long_polling.c)
+                   transport_long_polling.c
+                   loop.c
+                   loops/gthread.c)
+
+add_subdirectory(loops)
 
 target_link_libraries(cometd
                       ${GLIB2_LIBRARIES}

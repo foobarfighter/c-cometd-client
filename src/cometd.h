@@ -1,8 +1,14 @@
 #ifndef COMETD_H
 #define COMETD_H
 
+// Forward declaration stuff
+struct _cometd;
+typedef struct _cometd cometd;
+
 #include <glib.h>
 #include <json-glib/json-glib.h>
+
+#include "loop.h"
 #include "cometd_msg.h"
 #include "cometd_json.h"
 
@@ -46,7 +52,7 @@
 typedef enum {
   COMETDOPT_URL = 0,
   COMETDOPT_REQUEST_TIMEOUT,
-  COMETDOPT_INIT_LOOPFUNC
+  COMETDOPT_LOOP
 } cometd_opt;
 
 // Errors
@@ -62,15 +68,11 @@ typedef enum {
 #define COMETD_MAX_CHANNEL_LEN   512
 #define COMETD_MAX_CHANNEL_PARTS 254
 
-// Forward declaration stuff
-struct _cometd;
-typedef struct _cometd cometd;
 
 // Transport callback functions
 typedef int       (*cometd_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_send_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
-typedef int       (*cometd_init_loopfunc)(const cometd* h);
 
 typedef struct {
   char*                name;
@@ -86,7 +88,6 @@ typedef struct {
   long                 max_network_delay;
   long                 request_timeout;
   int                  append_message_type_to_url;
-  cometd_init_loopfunc init_loop_func;
   GList*      transports; 
 } cometd_config;
 
@@ -113,6 +114,7 @@ struct _cometd {
   cometd_conn*     conn;
   cometd_config*   config;
   cometd_error_st* last_error;
+  cometd_loop*     loop;
 };
 
 typedef struct _cometd_subscription {
@@ -204,7 +206,6 @@ char*             cometd_conn_client_id(const cometd* h);
 void              cometd_conn_set_client_id(const cometd* h, const char *id);
 void              cometd_conn_set_transport(const cometd* h, cometd_transport* t);
 GHashTable*       cometd_conn_subscriptions(const cometd* h);
-int               cometd_init_loop(const cometd* h);
 void              cometd_listen(const cometd* h);
 
 #endif /* COMETD_H */

@@ -35,7 +35,7 @@ channel
 - cometd_channel_matches_free
 
 transport
-- cometd_transport_new(TCOMETD_LP) # macro
+- cometd_transport_new(COMETD_TRANSPORT_LP) # macro
 - cometd_transport_current
 - cometd_transport_find
 - cometd_transport_register
@@ -59,7 +59,7 @@ conn
 - cometd_conn_subscriptions
 
 - loop
-- cometd_loop_new(LCOMETD_GTHREAD)
+- cometd_loop_new(COMETD_LOOP_GTHREAD)
 - cometd_loop_start
 - cometd_loop_stop
 - cometd_loop_destroy

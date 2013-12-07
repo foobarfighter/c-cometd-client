@@ -30,16 +30,18 @@ START_TEST(test_cometd_handshake_stress)
 }
 END_TEST
 
-static int test_init_fail_loop(const cometd* h) { return 1; }
+static unsigned int test_start_loop (cometd_loop* h) { return 1; }
 
 // leaks
 START_TEST (test_cometd_failed_init_loop)
 {
   while (1){
     cometd* h = cometd_new();
+    cometd_loop loop;
+    loop.start = test_start_loop;
 
     cometd_configure(h, COMETDOPT_URL, TEST_SERVER_URL);
-    cometd_configure(h, COMETDOPT_INIT_LOOPFUNC, test_init_fail_loop);
+    cometd_configure(h, COMETDOPT_LOOP, &loop);
 
     int code = cometd_connect(h);
     fail_unless(cometd_conn_is_status(h, COMETD_HANDSHAKE_SUCCESS));

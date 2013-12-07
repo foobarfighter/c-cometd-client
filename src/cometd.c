@@ -36,7 +36,6 @@ cometd_new(void)
   config->request_timeout   = DEFAULT_REQUEST_TIMEOUT;
   config->append_message_type_to_url = DEFAULT_APPEND_MESSAGE_TYPE;
   config->transports        = NULL;
-  config->init_loop_func    = cometd_init_loop;
   cometd_register_transport(config, &COMETD_TRANSPORT_LONG_POLLING);
 
   // connection
@@ -44,6 +43,9 @@ cometd_new(void)
   GMutex* mutex = malloc(sizeof(GMutex));
   g_cond_init(cond);
   g_mutex_init(mutex);
+
+  // run loop
+  h->loop = cometd_loop_new(gthread, h);
 
   cometd_conn* conn = malloc(sizeof(cometd_conn));
   conn->state = COMETD_UNINITIALIZED;
@@ -113,7 +115,7 @@ cometd_destroy(cometd* h)
 
 #undef cometd_configure
 int
-cometd_configure(const cometd* h, cometd_opt opt, ...)
+cometd_configure(cometd* h, cometd_opt opt, ...)
 {
   va_list value;
   va_start(value, opt);
@@ -125,8 +127,10 @@ cometd_configure(const cometd* h, cometd_opt opt, ...)
       break;
     case COMETDOPT_REQUEST_TIMEOUT:
       h->config->request_timeout = va_arg(value, long);
-    case COMETDOPT_INIT_LOOPFUNC:
-      h->config->init_loop_func = va_arg(value, cometd_init_loopfunc);
+      break;
+    case COMETDOPT_LOOP:
+      cometd_loop_destroy(h->loop);
+      h->loop = va_arg(value, cometd_loop*);
     default:
       return -1;
   }
@@ -145,7 +149,7 @@ cometd_connect(const cometd* h)
     goto error;
   }
 
-  if (h->config->init_loop_func(h) != COMETD_SUCCESS){
+  if (cometd_loop_start(h->loop)){
     error_code = cometd_error(h, ECOMETD_INIT_LOOP,
                                  "could not initialize connection loop");
     goto error;
@@ -165,7 +169,7 @@ cometd_disconnect(const cometd* h, int wait_for_server)
   } else {
     cometd_conn_set_status(h, COMETD_DISCONNECTED);
   } 
-  g_thread_join(h->conn->inbox_thread);
+  cometd_loop_stop(h->loop);
 }
 
 
@@ -325,15 +329,6 @@ cometd_recv(const cometd* h)
   cometd_transport* t = cometd_current_transport(h);
   JsonNode* node = t->recv(h);
   return node;
-}
-
-int
-cometd_init_loop(const cometd* h)
-{
-  h->conn->inbox_thread = g_thread_new("cometd_recv_loop",
-                                       cometd_recv_loop,
-                                       (gpointer)h);
-  return COMETD_SUCCESS;
 }
 
 int
