@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cometd.h>
-#include <cometd_json.h>
+#include <json.h>
 
 #include "check_cometd.h"
 #include "test_helper.h"

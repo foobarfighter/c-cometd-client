@@ -6,7 +6,7 @@
 
 #include "check_cometd.h"
 #include "cometd.h"
-#include "cometd_json.h"
+#include "json.h"
 #include "transport_long_polling.h"
 #include "test_helper.h"
 

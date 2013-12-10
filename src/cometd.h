@@ -8,8 +8,8 @@ typedef struct _cometd cometd;
 #include <glib.h>
 #include <json-glib/json-glib.h>
 
-#include "cometd_msg.h"
-#include "cometd_json.h"
+#include "msg.h"
+#include "json.h"
 #include "loop.h"
 #include "inbox.h"
 

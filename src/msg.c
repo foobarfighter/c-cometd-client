@@ -1,4 +1,4 @@
-#include "cometd_msg.h"
+#include "msg.h"
 
 /**
  * Takes a JsonNode and does its best to determine if

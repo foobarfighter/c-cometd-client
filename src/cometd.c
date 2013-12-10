@@ -7,7 +7,7 @@
 
 //#include "ev.h"
 #include "cometd.h"
-#include "cometd_json.h"
+#include "json.h"
 #include "http.h"
 #include "transport_long_polling.h"
 

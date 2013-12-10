@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <glib.h>
-#include "cometd_json.h"
+#include "json.h"
 #include "../tests/test_helper.h"
 
 static GQueue* log = NULL;

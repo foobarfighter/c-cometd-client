@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 #include "cometd.h"
-#include "cometd_json.h"
+#include "json.h"
 #include "test_helper.h"
 
 START_TEST(test_cometd_json_str2node_stress)
