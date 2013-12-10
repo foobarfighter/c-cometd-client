@@ -43,3 +43,14 @@ cometd_msg_has_data(JsonNode* node)
   return ret;
 }
 
+/**
+ * Returns the channel of the message as a new string
+ */
+const gchar*
+cometd_msg_get_channel(JsonNode* node)
+{
+  g_return_val_if_fail(JSON_NODE_HOLDS_OBJECT (node), NULL);
+  JsonObject* obj = json_node_get_object(node);
+  return json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
+}
+

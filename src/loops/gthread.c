@@ -15,13 +15,11 @@ static gpointer cometd_loop_gthread_run(gpointer cometd);
 cometd_loop*
 cometd_loop_gthread_new(cometd* cometd)
 {
-	cometd_loop* loop = malloc(sizeof(cometd_loop));
+	cometd_loop* loop = cometd_loop_malloc(cometd);
 
-  loop->cometd = cometd;
 	loop->start = cometd_loop_gthread_start;
 	loop->stop = cometd_loop_gthread_stop;
 	loop->destroy = cometd_loop_gthread_destroy;
-
   loop->internal = malloc(sizeof(loop_internal));
 
 	return loop;
@@ -36,7 +34,7 @@ cometd_loop_gthread_run(gpointer data)
   while (!(cometd_conn_is_status(h, COMETD_DISCONNECTED)) &&
          (node = cometd_recv(h)) != NULL)
   {
-    cometd_process_payload(h, node);
+    cometd_inbox_push(h->inbox, node);
     json_node_free(node);
   }
   return NULL;

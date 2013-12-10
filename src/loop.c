@@ -1,4 +1,13 @@
+#include <stdlib.h>
 #include "cometd.h"
+
+cometd_loop*
+cometd_loop_malloc(cometd* cometd)
+{
+  cometd_loop* loop = malloc(sizeof(cometd_loop));
+  loop->cometd = cometd;
+  return loop;
+}
 
 unsigned int
 cometd_loop_start(cometd_loop* h)

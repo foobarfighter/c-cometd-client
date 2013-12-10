@@ -19,6 +19,7 @@ struct _cometd_loop {
 };
 
 #define cometd_loop_new(type, cometd) cometd_loop_##type##_new(cometd)
+cometd_loop* cometd_loop_malloc(cometd* cometd);
 unsigned int cometd_loop_start (cometd_loop* h);
 void cometd_loop_stop (cometd_loop* h);
 void cometd_loop_destroy (cometd_loop* h);

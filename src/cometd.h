@@ -8,9 +8,10 @@ typedef struct _cometd cometd;
 #include <glib.h>
 #include <json-glib/json-glib.h>
 
-#include "loop.h"
 #include "cometd_msg.h"
 #include "cometd_json.h"
+#include "loop.h"
+#include "inbox.h"
 
 // Version
 #define COMETD_VERSION                "1.0"
@@ -95,10 +96,6 @@ typedef struct {
   long               state;
   long               _msg_id_seed;
   cometd_transport*  transport;
-  GQueue*            inbox;
-  GCond*             inbox_cond;
-  GMutex*            inbox_mutex;
-  GThread*           inbox_thread;
   GHashTable*        subscriptions;
   
   char client_id[COMETD_MAX_CLIENT_ID_LEN];
@@ -109,18 +106,29 @@ typedef struct _cometd_error_st {
   char* message;
 } cometd_error_st;
 
+typedef struct _cometd_subscription {
+  char channel[COMETD_MAX_CHANNEL_LEN];
+  cometd_callback callback;
+} cometd_subscription;
+
+// system handlers
+typedef struct {
+  cometd_subscription* handshake;
+  cometd_subscription* connect;
+  cometd_subscription* subscribe;
+  cometd_subscription* unsubscribe;
+  cometd_subscription* disconnect;
+} cometd_sys_s;
+
 // cometd handle
 struct _cometd {
   cometd_conn*     conn;
   cometd_config*   config;
   cometd_error_st* last_error;
   cometd_loop*     loop;
+  cometd_inbox*    inbox;
+  cometd_sys_s     sys_s;
 };
-
-typedef struct _cometd_subscription {
-  char channel[COMETD_MAX_CHANNEL_LEN];
-  cometd_callback callback;
-} cometd_subscription;
 
 
 // configuration and lifecycle
@@ -186,7 +194,7 @@ int cometd_fire_listeners(const cometd* h,
 // processing
 void cometd_process_payload  (const cometd* h, JsonNode* root);
 void cometd_process_message(JsonArray *array, guint idx, JsonNode* node, gpointer data);
-void cometd_process_handshake(const cometd* h, JsonNode* root);
+int  cometd_process_handshake(const cometd* h, JsonNode* root);
 
 // channels
 gboolean cometd_channel_is_wildcard(const char* channel);

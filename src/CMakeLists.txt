@@ -10,6 +10,7 @@ add_library(cometd cometd.c
                    cometd_msg.c
                    http.c
                    transport_long_polling.c
+                   inbox.c
                    loop.c
                    loops/gthread.c)
 
