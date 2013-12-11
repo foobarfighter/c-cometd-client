@@ -10,6 +10,12 @@ static GMutex log_mutex;
 static GCond  log_cond;
 
 int
+test_empty_handler(const cometd* h, JsonNode* message)
+{
+  return COMETD_SUCCESS;
+}
+
+int
 log_handler(const cometd* h, JsonNode* message)
 {
   g_mutex_lock(&log_mutex);

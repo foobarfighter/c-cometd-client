@@ -18,6 +18,7 @@ int log_handler(const cometd* h, JsonNode* message);
 guint log_size(void);
 void log_clear(void);
 void wait_for_message(glong timeout_secs, GList* excludes, char* json);
+int test_empty_handler(const cometd* h, JsonNode* message);
 
 // json matchers
 gboolean json_node_equal(JsonNode* a, JsonNode* b, GList* excludes);

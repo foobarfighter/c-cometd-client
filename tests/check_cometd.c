@@ -25,10 +25,6 @@ static JsonNode* test_transport_recv(const cometd* h) {
   return json_node_new(JSON_NODE_ARRAY);
 }
 
-static int test_empty_handler(const cometd* h, JsonNode* message) {
-  return COMETD_SUCCESS;
-}
-
 static cometd_transport TEST_TRANSPORT = {
   "test-transport",
    test_transport_send,
@@ -263,75 +259,6 @@ START_TEST (test_cometd_conn_status)
 }
 END_TEST
 
-START_TEST (test_cometd_add_listener)
-{
-  ck_assert_int_eq(0, log_size());
-
-  cometd_subscription* s;
-  int code;
-
-  JsonNode* message = cometd_json_str2node("{}");
-
-  s    = cometd_add_listener(g_instance, "/foo/bar/baz", log_handler);
-  code = cometd_fire_listeners(g_instance, "/foo/bar/baz", message);
-
-  ck_assert_int_eq(COMETD_SUCCESS, code);
-  wait_for_message(100, NULL, "{}");
-
-  code = cometd_remove_listener(g_instance, s);
-  ck_assert_int_eq(COMETD_SUCCESS, code);
-
-  code = cometd_fire_listeners(g_instance, "/foo/bar/baz", message);
-  ck_assert_int_eq(COMETD_SUCCESS, code);
-  ck_assert_int_eq(0, log_size());
-
-  json_node_free(message);
-}
-END_TEST
-
-START_TEST (test_cometd_fire_listeners_wildcard)
-{
-  JsonNode* message = cometd_json_str2node("{}");
-
-  cometd_subscription *s1, *s2;
-
-  s1 = cometd_add_listener(g_instance, "/foo/**", log_handler);
-  s2 = cometd_add_listener(g_instance, "/quux/*", log_handler);
-
-  cometd_fire_listeners(g_instance, "/foo/bar/baz", message);
-  ck_assert_int_eq(1, log_size());
-  cometd_fire_listeners(g_instance, "/quux/wat/wut", message);
-  ck_assert_int_eq(1, log_size());
-  cometd_fire_listeners(g_instance, "/quux/wat", message);
-  ck_assert_int_eq(2, log_size());
-
-  json_node_free(message);
-}
-END_TEST
-
-START_TEST (test_cometd_channel_subscriptions)
-{
-  cometd_subscription *s1, *s2, *s3, *s4;
-
-  s1 = cometd_add_listener(g_instance, "/foo/*", test_empty_handler);
-  s2 = cometd_add_listener(g_instance, "/**", test_empty_handler);
-  s3 = cometd_add_listener(g_instance, "/foo/bar/baz/*", test_empty_handler);
-  s4 = cometd_add_listener(g_instance, "/foo/bar/baz/bang", test_empty_handler);
-
-  GList* subscriptions = cometd_channel_subscriptions(g_instance,
-                                                      "/foo/bar/baz/bang");
-
-  fail_if(subscriptions == NULL);
-  ck_assert_int_eq(3, g_list_length(subscriptions));
-
-  fail_if(g_list_find(subscriptions, s2) == NULL);
-  fail_if(g_list_find(subscriptions, s3) == NULL);
-  fail_if(g_list_find(subscriptions, s4) == NULL);
-
-  g_list_free(subscriptions);
-}
-END_TEST
-
 static void
 dump_channel_matches(const char* c, GList* channels)
 {
@@ -394,9 +321,6 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_error);
   tcase_add_test (tc_unit, test_cometd_is_meta_channel);
   tcase_add_test (tc_unit, test_cometd_conn_status);
-  tcase_add_test (tc_unit, test_cometd_add_listener);
-  tcase_add_test (tc_unit, test_cometd_fire_listeners_wildcard);
-  tcase_add_test (tc_unit, test_cometd_channel_subscriptions);
   tcase_add_test (tc_unit, test_cometd_channel_matches);
   tcase_add_test (tc_unit, test_cometd_channel_is_wildcard);
   suite_add_tcase (s, tc_unit);

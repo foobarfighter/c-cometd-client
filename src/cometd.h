@@ -3,15 +3,9 @@
 
 // Forward declaration stuff
 struct _cometd;
+struct _cometd_subscription;
 typedef struct _cometd cometd;
-
-#include <glib.h>
-#include <json-glib/json-glib.h>
-
-#include "msg.h"
-#include "json.h"
-#include "loop.h"
-#include "inbox.h"
+typedef struct _cometd_subscription cometd_subscription;
 
 // Version
 #define COMETD_VERSION                "1.0"
@@ -49,13 +43,6 @@ typedef struct _cometd cometd;
 #define COMETD_CHANNEL_META_UNSUBSCRIBE "/meta/unsubscribe"
 #define COMETD_CHANNEL_META_DISCONNECT  "/meta/disconnect"
 
-// Configuration options
-typedef enum {
-  COMETDOPT_URL = 0,
-  COMETDOPT_REQUEST_TIMEOUT,
-  COMETDOPT_LOOP
-} cometd_opt;
-
 // Errors
 #define COMETD_SUCCESS            0
 #define ECOMETD_JSON_SERIALIZE    1
@@ -69,11 +56,26 @@ typedef enum {
 #define COMETD_MAX_CHANNEL_LEN   512
 #define COMETD_MAX_CHANNEL_PARTS 254
 
+#include <glib.h>
+#include <json-glib/json-glib.h>
 
 // Transport callback functions
 typedef int       (*cometd_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_send_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
+
+#include "event.h"
+#include "msg.h"
+#include "json.h"
+#include "loop.h"
+#include "inbox.h"
+
+// Configuration options
+typedef enum {
+  COMETDOPT_URL = 0,
+  COMETDOPT_REQUEST_TIMEOUT,
+  COMETDOPT_LOOP
+} cometd_opt;
 
 typedef struct {
   char*                name;
@@ -83,20 +85,19 @@ typedef struct {
 
 // connection configuration object
 typedef struct {
-  char*                url;
-  long                 backoff_increment;
-  long                 max_backoff;
-  long                 max_network_delay;
-  long                 request_timeout;
-  int                  append_message_type_to_url;
-  GList*      transports; 
+  char*  url;
+  long   backoff_increment;
+  long   max_backoff;
+  long   max_network_delay;
+  long   request_timeout;
+  int    append_message_type_to_url;
+  GList* transports; 
 } cometd_config;
 
 typedef struct {
   long               state;
   long               _msg_id_seed;
   cometd_transport*  transport;
-  GHashTable*        subscriptions;
   
   char client_id[COMETD_MAX_CLIENT_ID_LEN];
 } cometd_conn;
@@ -105,11 +106,6 @@ typedef struct _cometd_error_st {
   int   code;
   char* message;
 } cometd_error_st;
-
-typedef struct _cometd_subscription {
-  char channel[COMETD_MAX_CHANNEL_LEN];
-  cometd_callback callback;
-} cometd_subscription;
 
 // system handlers
 typedef struct {
@@ -127,6 +123,7 @@ struct _cometd {
   cometd_error_st* last_error;
   cometd_loop*     loop;
   cometd_inbox*    inbox;
+  GHashTable*      subscriptions;
   cometd_sys_s     sys_s;
 };
 
@@ -177,30 +174,13 @@ cometd_transport* cometd_find_transport(const cometd_config* h,
 
 void cometd_destroy_transport(gpointer transport);
 
-// events
-cometd_subscription* cometd_add_listener(const cometd* h,
-                                         char * channel,
-                                         cometd_callback cb);
-
-int cometd_listener_count(const cometd* h, const char* channel);
-
-int cometd_remove_listener(const cometd* h,
-                           cometd_subscription* subscription);
-
-int cometd_fire_listeners(const cometd* h,
-                          const char* channel,
-                          JsonNode* message);
-
 // processing
-void cometd_process_payload  (const cometd* h, JsonNode* root);
-void cometd_process_message(JsonArray *array, guint idx, JsonNode* node, gpointer data);
 int  cometd_process_handshake(const cometd* h, JsonNode* root);
 
 // channels
 gboolean cometd_channel_is_wildcard(const char* channel);
 GList*   cometd_channel_matches(const char* channel);
 void     cometd_channel_matches_free(GList* matches);
-GList*   cometd_channel_subscriptions(const cometd* h, const char* channel);
 
 // other
 int               cometd_error(const cometd* h, int code, char* message);

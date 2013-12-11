@@ -58,9 +58,10 @@ cometd_new(void)
   conn->transport = NULL;
   conn->_msg_id_seed = 0;
 
-  conn->subscriptions = g_hash_table_new(g_str_hash, g_str_equal);
-
   h->conn = conn;
+
+  // events
+  h->subscriptions = cometd_listener_new();
 
   // set internal handlers
   cometd_impl_set_sys_s(h);
@@ -113,17 +114,11 @@ cometd_destroy(cometd* h)
   g_list_free_full(h->config->transports, cometd_destroy_transport);
   free(h->config);
  
-  // connection
-  g_hash_table_foreach(h->conn->subscriptions,
-                       cometd_destroy_subscription_list,
-                       h);
-
-  g_hash_table_destroy(h->conn->subscriptions);
-
-  free(h->conn);
+  cometd_listener_destroy(h->subscriptions);
 
   // error state
   free(h->last_error);
+  free(h->conn);
 
   // handle
   free(h);
@@ -469,10 +464,9 @@ cometd_is_meta_channel(const char* channel)
 GHashTable* cometd_conn_subscriptions(const cometd* h)
 {
   g_assert(h != NULL);
-  g_assert(h->conn != NULL);
-  g_assert(h->conn->subscriptions != NULL);
+  g_assert(h->subscriptions != NULL);
 
-  return h->conn->subscriptions;
+  return h->subscriptions;
 }
 
 int
@@ -740,147 +734,11 @@ cometd_destroy_transport(gpointer transport)
   g_free(transport);
 }
 
-cometd_subscription*
-cometd_add_listener(const cometd* h,
-                    char * channel,
-                    cometd_callback cb)
-{
-  g_return_val_if_fail(h->conn != NULL, NULL);
-  g_return_val_if_fail(h->conn->subscriptions != NULL, NULL);
-
-  GHashTable* subscriptions = h->conn->subscriptions;
-  int len                   = strlen(channel);
-
-  g_return_val_if_fail(len > 0 && len < COMETD_MAX_CHANNEL_LEN - 1, NULL);
-
-  cometd_subscription* s = malloc(sizeof(cometd_subscription));
-  if (s == NULL)
-    goto error;
-
-  strncpy(s->channel, channel, len + 1);
-  s->callback = cb;
-
-  /*
-    If the list isn't found then lookup will be NULL and prepend
-    will create a brand new list for us.
-  */
-  GList* list = (GList*) g_hash_table_lookup(subscriptions, channel);
-
-  /*
-    Prepend to existing list or create brand new list.
-  */
-  list = g_list_prepend(list, s);
-
-  /*
-    We always need to update the value because the pointer
-    to the list changes every time we prepend an element.
-  */
-  g_hash_table_insert(subscriptions, channel, list);
-
-error:
-  return s;
-}
-
-int
-cometd_remove_listener(const cometd* h,
-                       cometd_subscription* subscription)
-{
-  g_return_val_if_fail(h->conn != NULL, ECOMETD_UNKNOWN);
-  g_return_val_if_fail(h->conn->subscriptions != NULL, ECOMETD_UNKNOWN);
-  g_return_val_if_fail(subscription != NULL, ECOMETD_UNKNOWN);
-  g_return_val_if_fail(subscription->channel != NULL, ECOMETD_UNKNOWN);
-
-  GHashTable* subscriptions = h->conn->subscriptions;
-  char* channel = subscription->channel;
-
-  GList* list = (GList*) g_hash_table_lookup(subscriptions, channel);
-
-  list = g_list_remove(list, subscription);
-
-  // We need to reset the pointer because it may have changed.
-  g_hash_table_insert(subscriptions, channel, list);
-
-  free(subscription);
-
-  return COMETD_SUCCESS;
-}
-
-int
-cometd_listener_count(const cometd* h, const char* channel)
-{
-  g_assert(h != NULL);
-  g_assert(h->conn != NULL);
-  g_assert(h->conn->subscriptions != NULL);
-
-  g_return_val_if_fail(channel != NULL, 0);
-  
-  GList* list;
-  
-  list = (GList*) g_hash_table_lookup(h->conn->subscriptions, channel);
-  
-  return g_list_length(list);
-}
-
-int
-cometd_fire_listeners(const cometd* h,
-                      const char* channel,
-                      JsonNode* message)
-{
-  g_return_val_if_fail(h->conn != NULL, ECOMETD_UNKNOWN);
-  g_return_val_if_fail(h->conn->subscriptions != NULL, ECOMETD_UNKNOWN);
-  g_return_val_if_fail(channel != NULL, ECOMETD_UNKNOWN);
-
-  GList* list = cometd_channel_subscriptions(h, channel);
-  
-  // If the list is NULL then, then there are no subscriptions.
-  if (list == NULL) { return COMETD_SUCCESS; }
-
-  GList* item;
-  for (item = list; item; item = g_list_next(item))
-  {
-    cometd_subscription* s = (cometd_subscription*) item->data;
-    if (s->callback(h, message) != COMETD_SUCCESS) {
-      goto error;
-    }
-  }
-
-  g_list_free(list);
-
-  return COMETD_SUCCESS;
-error:
-  return ECOMETD_UNKNOWN;
-}
-
 gboolean
 cometd_channel_is_wildcard(const char* channel)
 {
   g_assert(channel != NULL);
   return *(channel + strnlen(channel, COMETD_MAX_CHANNEL_LEN) - 1) == '*';
-}
-
-
-GList*
-cometd_channel_subscriptions(const cometd* h, const char* channel)
-{
-  g_assert(!cometd_channel_is_wildcard(channel));
-
-  GList* subscriptions = NULL;
-  GHashTable* map = cometd_conn_subscriptions(h);
-  GList* channels = cometd_channel_matches(channel);
-
-  GList* c;
-  for (c = channels; c; c = g_list_next(c))
-  {
-    GList* list = (GList*) g_hash_table_lookup(map, c->data);
-
-    GList* s = NULL;
-    for (s = list; s; s = g_list_next(s))
-      subscriptions = g_list_prepend(subscriptions, s->data);
-  }
-
-  cometd_channel_matches_free(channels);
-
-  return subscriptions;
 }
 
 void
