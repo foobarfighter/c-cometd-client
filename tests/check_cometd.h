@@ -7,7 +7,8 @@
 Suite* make_cometd_unit_suite (void);
 Suite* make_cometd_integration_suite (void);
 Suite* make_http_integration_suite (void);
-Suite* make_cometd_msg_suite (void);
+Suite* make_msg_suite (void);
+Suite* make_conn_suite (void);
 Suite* make_cometd_inbox_suite (void);
 Suite* make_cometd_event_suite (void);
 Suite* make_test_helper_suite (void);

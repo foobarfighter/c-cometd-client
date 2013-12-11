@@ -302,6 +302,57 @@ START_TEST (test_cometd_channel_is_wildcard)
 }
 END_TEST
 
+START_TEST(test_cometd_should_handshake)
+{
+  cometd_conn_set_status(g_instance, COMETD_HANDSHAKE_SUCCESS);
+  fail_if(cometd_should_handshake(g_instance));
+
+  cometd_conn_set_status(g_instance, COMETD_CONNECTED);
+  fail_if(cometd_should_handshake(g_instance));
+
+  cometd_conn_clear_status(g_instance);
+
+  cometd_advice* advice = cometd_advice_new();
+  advice->reconnect = COMETD_RECONNECT_HANDSHAKE;
+  cometd_conn_take_advice(g_instance->conn, advice);
+  
+  fail_unless(cometd_should_handshake(g_instance));
+
+  cometd_conn_take_advice(g_instance->conn, NULL);
+}
+END_TEST
+
+START_TEST (test_cometd_get_backoff)
+{
+  cometd_conn* conn = g_instance->conn;
+  cometd_config* config = g_instance->config;
+
+  config->backoff_increment = 10;
+
+  // test incremental backoff when no advice
+  cometd_conn_take_advice(conn, NULL);
+  ck_assert_int_eq(0, cometd_get_backoff(g_instance, 0));
+  ck_assert_int_eq(10, cometd_get_backoff(g_instance, 1));
+  ck_assert_int_eq(20, cometd_get_backoff(g_instance, 2));
+
+  // test when advice is hanshake
+  cometd_advice* handshake_advice = cometd_advice_new();
+  handshake_advice->reconnect = COMETD_RECONNECT_HANDSHAKE;
+  handshake_advice->interval = 10;
+  cometd_conn_take_advice(conn, handshake_advice);
+  ck_assert_int_eq(10, cometd_get_backoff(g_instance, 20));
+
+  // test when advice is none
+  cometd_advice* none_advice = cometd_advice_new();
+  handshake_advice->reconnect = COMETD_RECONNECT_NONE;
+  handshake_advice->interval = 10;
+  cometd_conn_take_advice(conn, none_advice);
+  ck_assert_int_eq(-1, cometd_get_backoff(g_instance, 20));
+
+  cometd_conn_take_advice(conn, NULL);
+}
+END_TEST
+
 Suite* make_cometd_unit_suite (void)
 {
   Suite *s = suite_create ("Cometd");
@@ -323,6 +374,8 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_conn_status);
   tcase_add_test (tc_unit, test_cometd_channel_matches);
   tcase_add_test (tc_unit, test_cometd_channel_is_wildcard);
+  tcase_add_test (tc_unit, test_cometd_should_handshake);
+  tcase_add_test (tc_unit, test_cometd_get_backoff);
   suite_add_tcase (s, tc_unit);
 
   return s;

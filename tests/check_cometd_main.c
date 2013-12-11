@@ -10,7 +10,8 @@ main (void)
 
   SRunner *sr = srunner_create (make_cometd_integration_suite());
   srunner_add_suite (sr, make_cometd_unit_suite());
-  srunner_add_suite (sr, make_cometd_msg_suite());
+  srunner_add_suite (sr, make_msg_suite());
+  srunner_add_suite (sr, make_conn_suite());
   srunner_add_suite (sr, make_http_integration_suite ());
   srunner_add_suite (sr, make_test_helper_suite ());
   srunner_add_suite (sr, make_cometd_event_suite ());

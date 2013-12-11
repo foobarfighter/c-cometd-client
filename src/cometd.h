@@ -1,12 +1,6 @@
 #ifndef COMETD_H
 #define COMETD_H
 
-// Forward declaration stuff
-struct _cometd;
-struct _cometd_subscription;
-typedef struct _cometd cometd;
-typedef struct _cometd_subscription cometd_subscription;
-
 // Version
 #define COMETD_VERSION                "1.0"
 #define COMETD_MIN_VERSION            "0.9"
@@ -24,17 +18,6 @@ typedef struct _cometd_subscription cometd_subscription;
 #define COMETD_HANDSHAKE_SUCCESS      0x00000002
 #define COMETD_CONNECTED              0x00000004
 #define COMETD_DISCONNECTING          0x00000008
-
-// Message fields
-#define COMETD_MSG_ID_FIELD           "id"
-#define COMETD_MSG_DATA_FIELD         "data"
-#define COMETD_MSG_CLIENT_ID_FIELD    "clientId"
-#define COMETD_MSG_CHANNEL_FIELD      "channel"
-#define COMETD_MSG_VERSION_FIELD      "version"
-#define COMETD_MSG_MIN_VERSION_FIELD  "minimumVersion"
-#define COMETD_MSG_ADVICE_FIELD       "advice"
-#define COMETD_MSG_SUBSCRIPTION_FIELD "subscription"
-#define COMETD_MSG_SUCCESSFUL_FIELD   "successful"
 
 // Channels
 #define COMETD_CHANNEL_META_HANDSHAKE   "/meta/handshake"
@@ -59,11 +42,22 @@ typedef struct _cometd_subscription cometd_subscription;
 #include <glib.h>
 #include <json-glib/json-glib.h>
 
+// Forward declaration stuff
+struct _cometd;
+struct _cometd_conn;
+struct _cometd_subscription;
+struct _cometd_transport;
+typedef struct _cometd cometd;
+typedef struct _cometd_conn cometd_conn;
+typedef struct _cometd_subscription cometd_subscription;
+typedef struct _cometd_transport cometd_transport;
+
 // Transport callback functions
 typedef int       (*cometd_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_send_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
 
+#include "conn.h"
 #include "event.h"
 #include "msg.h"
 #include "json.h"
@@ -77,11 +71,11 @@ typedef enum {
   COMETDOPT_LOOP
 } cometd_opt;
 
-typedef struct {
+struct _cometd_transport {
   char*                name;
   cometd_send_callback send;
   cometd_recv_callback recv;
-} cometd_transport;
+};
 
 // connection configuration object
 typedef struct {
@@ -93,14 +87,6 @@ typedef struct {
   int    append_message_type_to_url;
   GList* transports; 
 } cometd_config;
-
-typedef struct {
-  long               state;
-  long               _msg_id_seed;
-  cometd_transport*  transport;
-  
-  char client_id[COMETD_MAX_CLIENT_ID_LEN];
-} cometd_conn;
 
 typedef struct _cometd_error_st {
   int   code;
@@ -149,6 +135,8 @@ JsonNode* cometd_new_publish_message(const cometd* h,
 
 // protocol
 int         cometd_handshake    (const cometd* h, cometd_callback cb);
+gboolean    cometd_should_handshake (const cometd* h);
+long        cometd_get_backoff  (const cometd* h, long attempt);
 int         cometd_connect      (const cometd* h);
 JsonNode*   cometd_recv         (const cometd* h);
 

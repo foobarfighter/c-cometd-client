@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include "../cometd.h"
 
 #define INTERNAL(loop) ((loop_internal*)loop->internal)
@@ -9,6 +10,7 @@ typedef struct {
 
 static unsigned int cometd_loop_gthread_start(cometd_loop* h);
 static void cometd_loop_gthread_stop(cometd_loop* h);
+static void cometd_loop_gthread_wait(cometd_loop* loop, long millis);
 static void cometd_loop_gthread_destroy(cometd_loop* h);
 static gpointer cometd_loop_gthread_run(gpointer cometd);
 
@@ -20,6 +22,7 @@ cometd_loop_gthread_new(cometd* cometd)
 	loop->start = cometd_loop_gthread_start;
 	loop->stop = cometd_loop_gthread_stop;
 	loop->destroy = cometd_loop_gthread_destroy;
+  loop->wait = cometd_loop_gthread_wait;
   loop->internal = malloc(sizeof(loop_internal));
 
 	return loop;
@@ -54,6 +57,13 @@ cometd_loop_gthread_stop(cometd_loop* loop)
 {
 	g_thread_join(INTERNAL(loop)->thread);
   INTERNAL(loop)->thread = NULL;
+}
+
+void
+cometd_loop_gthread_wait(cometd_loop* loop, long millis)
+{
+  g_return_if_fail(millis > 0);
+  usleep(millis * 1000);
 }
 
 void

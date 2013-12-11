@@ -54,3 +54,17 @@ cometd_msg_get_channel(JsonNode* node)
   return json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
 }
 
+/**
+ * Returns the client id of the message as a new string
+ */
+gchar*
+cometd_msg_client_id(JsonNode* node){
+  g_return_val_if_fail(JSON_NODE_HOLDS_OBJECT (node), NULL);
+
+  const gchar* client_id;
+
+  JsonObject* obj = json_node_get_object(node);
+  client_id = json_object_get_string_member(obj, COMETD_MSG_CLIENT_ID_FIELD);
+
+  return g_strdup(client_id);
+}

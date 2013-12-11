@@ -46,7 +46,19 @@ START_TEST (test_cometd_msg_has_data)
 }
 END_TEST
 
-Suite* make_cometd_msg_suite (void)
+START_TEST (test_cometd_msg_client_id)
+{
+  JsonNode* n = cometd_json_str2node("{ \"clientId\": \"abcd\" }");
+  gchar* client_id = cometd_msg_client_id(n);
+
+  ck_assert_str_eq("abcd", client_id);
+
+  json_node_free(n);
+  g_free(client_id);
+}
+END_TEST
+
+Suite* make_msg_suite (void)
 {
   Suite *s = suite_create ("cometd");
 
@@ -54,6 +66,7 @@ Suite* make_cometd_msg_suite (void)
   tcase_add_checked_fixture (tc_unit, setup, teardown);
   tcase_add_test (tc_unit, test_cometd_msg_is_successful);
   tcase_add_test (tc_unit, test_cometd_msg_has_data);
+  tcase_add_test (tc_unit, test_cometd_msg_client_id);
   suite_add_tcase (s, tc_unit);
 
   return s;

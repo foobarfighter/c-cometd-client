@@ -47,21 +47,10 @@ cometd_new(void)
   g_cond_init(cond);
   g_mutex_init(mutex);
 
-  // run loop
-  h->loop = cometd_loop_new(gthread, h);
-
-  // inbox
-  h->inbox = cometd_inbox_new(h->loop);
-
-  cometd_conn* conn = malloc(sizeof(cometd_conn));
-  conn->state = COMETD_UNINITIALIZED;
-  conn->transport = NULL;
-  conn->_msg_id_seed = 0;
-
-  h->conn = conn;
-
-  // events
-  h->subscriptions = cometd_listener_new();
+  h->conn = cometd_conn_new();                // connection
+  h->loop = cometd_loop_new(gthread, h);      // run loop
+  h->inbox = cometd_inbox_new(h->loop);       // inbox
+  h->subscriptions = cometd_listener_new();   // events
 
   // set internal handlers
   cometd_impl_set_sys_s(h);
@@ -298,93 +287,123 @@ cometd_recv(const cometd* h)
 }
 
 int
-_negotiate_transport(const cometd* h, JsonObject* obj)
-{
-  int found = 0;
-
-  JsonArray*  types = json_object_get_array_member(obj, "supportedConnectionTypes");
-
-  if (!types || json_array_get_length(types) == 0) return 0;
-
-  GList* client_entry      = h->config->transports;
-  GList* server_entry_list = json_array_get_elements(types);
-
-  // Loop through the client side transports
-  while (client_entry){
-    cometd_transport* transport = client_entry->data;
-
-    GList* server_entry = server_entry_list;
-
-    // Loop through the list of connection types supported by the server 
-    while (server_entry){
-      if (!strcmp(transport->name, json_node_get_string(server_entry->data))){
-        cometd_conn_set_transport(h, transport);
-        found = 1;
-        break;
-      }
-      server_entry = g_list_next(server_entry);
-    }
-
-    client_entry = g_list_next(client_entry);
-
-    if (found){ break; }
-  }
-
-  g_list_free(server_entry_list);
-
-  // TODO: there has to be a better way to do this in C
-  return (found == 1) ? 0 : 1;
-}
-
-char*
-_extract_client_id(const cometd* h, JsonObject* node){
-  cometd_conn_set_client_id(h, json_object_get_string_member(node, "clientId"));
-  return h->conn->client_id;
-}
-
-int
 cometd_handshake(const cometd* h, cometd_callback cb)
 {
-  JsonNode* handshake   = cometd_new_handshake_message(h);
-  gchar*    data        = cometd_json_node2str(handshake);
-  int       error_code  = COMETD_SUCCESS;
+  cometd_loop* loop = h->loop;
+  cometd_conn* conn = h->conn;
 
-  if (data == NULL){
-    error_code = cometd_error(h, ECOMETD_JSON_SERIALIZE, "could not serialize json");
-    goto free_handshake;
+  int code;
+  long backoff = 0;
+
+  guint attempt;
+  for (attempt = 1; cometd_should_handshake(h); ++attempt)
+  {
+    cometd_loop_wait(loop, backoff);
+
+    // code  = cometd_impl_handshake(h, cb);
+    backoff = cometd_get_backoff(h, attempt);
+
+    if (backoff == -1)
+      break;
   }
+
+  return code;
+}
+
+long
+cometd_get_backoff(const cometd* h, long attempt)
+{
+  long backoff;
+
+  cometd_config* config = h->config;
+  cometd_advice* advice = h->conn->advice;
+
+  if (!advice)
+    backoff = attempt * config->backoff_increment;
+  else if (cometd_advice_is_handshake(advice))
+    backoff = advice->interval;
+  else if (cometd_advice_is_none(advice))
+    backoff = -1;
+
+  return backoff;
+}
+
+gboolean
+cometd_should_handshake(const cometd* h)
+{
+  if (cometd_conn_is_status(h, COMETD_HANDSHAKE_SUCCESS) ||
+      cometd_conn_is_status(h, COMETD_CONNECTED))
+  {
+    return FALSE;
+  }
+
+  return cometd_advice_is_handshake(h->conn->advice);
+}
+
+// int
+// cometd_impl_handshake(const cometd* h, cometd_callback cb)
+// {
+
+//   JsonNode* handshake   = cometd_new_handshake_message(h);
+//   gchar*    data        = cometd_json_node2str(handshake);
+//   int       error_code  = COMETD_SUCCESS;  
+
+//   if (data == NULL){
+//     error_code = cometd_error(h, ECOMETD_JSON_SERIALIZE, "could not serialize json");
+//     goto free_handshake;
+//   }
   
-  char* resp = http_json_post(h->config->url, data, h->config->request_timeout);
+//   char* resp = http_json_post(h->config->url, data, h->config->request_timeout);
 
-  if (resp == NULL){
-    error_code = cometd_error(h, ECOMETD_HANDSHAKE, "could not handshake");
-    goto free_data;
-  }
+//   if (resp == NULL){
+//     error_code = cometd_error(h, ECOMETD_HANDSHAKE, "could not handshake");
+//     goto free_data;
+//   }
 
-  JsonNode* payload = cometd_json_str2node(resp);
+//   JsonNode* payload = cometd_json_str2node(resp);
 
-  if (payload == NULL){
-    error_code = cometd_error(h, ECOMETD_JSON_DESERIALIZE, "could not de-serialize json");
-    goto free_resp;
-  }
+//   if (payload == NULL){
+//     error_code = cometd_error(h, ECOMETD_JSON_DESERIALIZE, "could not de-serialize json");
+//     goto free_resp;
+//   }
 
-  error_code = cometd_impl_process_sync(h, payload);
+//   error_code = cometd_impl_process_sync(h, payload);
 
-  // TODO
-  if (!cometd_conn_is_status(h, COMETD_HANDSHAKE_SUCCESS)){
-    // backoff
-    // restart handshake
-  }
-free_payload:
-  json_node_free(payload);
-free_resp:
-  free(resp);
-free_data:
-  g_free(data);
-free_handshake:
-  json_node_free(handshake);
+//   if (!cometd_current_transport(h)){
+//     error_code = cometd_error(h, ECOMETD_NO_TRANSPORT, "could not find acceptable transport");
+//     goto free_payload;
+//   }
 
-  return error_code;
+// free_payload:
+//   json_node_free(payload);
+// free_resp:
+//   free(resp);
+// free_data:
+//   g_free(data);
+// free_handshake:
+//   json_node_free(handshake);
+
+//   return error_code;
+// }
+
+int
+cometd_process_handshake(const cometd* h, JsonNode* msg)
+{
+  int code = COMETD_SUCCESS;
+
+  // cometd_conn* conn = h->conn;
+  // cometd_transport* t = cometd_transport_negotiate(h->transports, msg);
+
+  // if (t) {
+  //   cometd_conn_set_transport(conn, t);
+  //   cometd_conn_set_client_id(conn, cometd_msg_client_id(msg));
+  //   cometd_conn_set_status(conn, COMETD_HANDSHAKE_SUCCESS);
+  // } else {
+  //   cometd_conn_set_advice(conn, cometd_msg_advice(msg));
+  //   code = ECOMETD_NO_TRANSPORT;
+  // }
+
+  return COMETD_SUCCESS;
 }
 
 long
@@ -504,18 +523,6 @@ cometd_impl_process_sync(const cometd* h, JsonNode* root)
   g_list_free(msgs);
 
   // TODO: What happens if cometd_fire_listeners blows up?
-  return COMETD_SUCCESS;
-}
-
-int
-cometd_process_handshake(const cometd* h, JsonNode* root)
-{
-  JsonObject* message = json_node_get_object(root);
-
-  _negotiate_transport(h, message);
-  _extract_client_id(h, message);
-  cometd_conn_set_status(h, COMETD_HANDSHAKE_SUCCESS);
-
   return COMETD_SUCCESS;
 }
 
