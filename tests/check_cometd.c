@@ -78,7 +78,7 @@ END_TEST
 
 START_TEST (test_cometd_new)
 {
-  fail_unless(cometd_conn_is_status(g_instance, COMETD_UNINITIALIZED));
+  fail_unless(cometd_conn_is_status(g_instance->conn, COMETD_UNINITIALIZED));
   ck_assert_int_eq(COMETD_SUCCESS, g_instance->last_error->code);
 
   char* actual_url = "http://example.com/cometd/";
@@ -94,7 +94,7 @@ END_TEST
 
 START_TEST (test_cometd_new_connect_message)
 {
-  cometd_conn_set_client_id(g_instance, "testid");
+  cometd_conn_set_client_id(g_instance->conn, "testid");
   cometd_register_transport(g_instance->config, &TEST_TRANSPORT);
   g_instance->conn->transport = &TEST_TRANSPORT;
 
@@ -123,7 +123,7 @@ END_TEST
 
 START_TEST (test_cometd_new_subscribe_message)
 {
-  cometd_conn_set_client_id(g_instance, "testid");
+  cometd_conn_set_client_id(g_instance->conn, "testid");
   const char* expected_channel = "/foo/bar/baz";
 
   JsonNode* msg = cometd_new_subscribe_message(g_instance,
@@ -141,7 +141,7 @@ END_TEST
 
 START_TEST (test_cometd_new_unsubscribe_message)
 {
-  cometd_conn_set_client_id(g_instance, "testid");
+  cometd_conn_set_client_id(g_instance->conn, "testid");
   const char* expected_channel = "/foo/bar/baz";
 
   JsonNode* msg = cometd_new_unsubscribe_message(g_instance,
@@ -159,7 +159,7 @@ END_TEST
 
 START_TEST (test_cometd_new_publish_message)
 {
-  cometd_conn_set_client_id(g_instance, "testid");
+  cometd_conn_set_client_id(g_instance->conn, "testid");
   const char* expected_channel = "/baz/bar";
   JsonNode* node = cometd_json_str2node("{ \"hey\": \"now\" }");
   JsonNode* message = cometd_new_publish_message(g_instance,
@@ -186,8 +186,8 @@ END_TEST
 
 START_TEST (test_cometd_unsubscribe)
 {
-  cometd_conn_set_client_id(g_instance, "testid");
-  cometd_conn_set_transport(g_instance, &TEST_TRANSPORT);
+  cometd_conn_set_client_id(g_instance->conn, "testid");
+  cometd_conn_set_transport(g_instance->conn, &TEST_TRANSPORT);
 
   cometd_subscription *s1, *s2;
 
@@ -205,8 +205,8 @@ END_TEST
 
 START_TEST (test_cometd_meta_subscriptions)
 {
-  cometd_conn_set_client_id(g_instance, "testid");
-  cometd_conn_set_transport(g_instance, &TEST_TRANSPORT);
+  cometd_conn_set_client_id(g_instance->conn, "testid");
+  cometd_conn_set_transport(g_instance->conn, &TEST_TRANSPORT);
 
   cometd_subscription *s1;
 
@@ -244,18 +244,20 @@ END_TEST
 
 START_TEST (test_cometd_conn_status)
 {
-  fail_unless(cometd_conn_is_status(g_instance, COMETD_UNINITIALIZED));
+  cometd_conn* conn = g_instance->conn;
 
-  cometd_conn_set_status(g_instance, COMETD_HANDSHAKE_SUCCESS);
-  fail_unless(cometd_conn_is_status(g_instance, COMETD_HANDSHAKE_SUCCESS));
+  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
 
-  cometd_conn_set_status(g_instance, COMETD_CONNECTED);
-  fail_unless(cometd_conn_is_status(g_instance, COMETD_HANDSHAKE_SUCCESS));
-  fail_unless(cometd_conn_is_status(g_instance, COMETD_CONNECTED));
+  cometd_conn_set_status(conn, COMETD_HANDSHAKE_SUCCESS);
+  fail_unless(cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
 
-  cometd_conn_clear_status(g_instance);
+  cometd_conn_set_status(conn, COMETD_CONNECTED);
+  fail_unless(cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
+  fail_unless(cometd_conn_is_status(conn, COMETD_CONNECTED));
 
-  fail_unless(cometd_conn_is_status(g_instance, COMETD_UNINITIALIZED));
+  cometd_conn_clear_status(conn);
+
+  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
 }
 END_TEST
 
@@ -304,13 +306,13 @@ END_TEST
 
 START_TEST(test_cometd_should_handshake)
 {
-  cometd_conn_set_status(g_instance, COMETD_HANDSHAKE_SUCCESS);
+  cometd_conn_set_status(g_instance->conn, COMETD_HANDSHAKE_SUCCESS);
   fail_if(cometd_should_handshake(g_instance));
 
-  cometd_conn_set_status(g_instance, COMETD_CONNECTED);
+  cometd_conn_set_status(g_instance->conn, COMETD_CONNECTED);
   fail_if(cometd_should_handshake(g_instance));
 
-  cometd_conn_clear_status(g_instance);
+  cometd_conn_clear_status(g_instance->conn);
 
   cometd_advice* advice = cometd_advice_new();
   advice->reconnect = COMETD_RECONNECT_HANDSHAKE;

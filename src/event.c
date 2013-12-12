@@ -145,7 +145,6 @@ cometd_listener_fire(GHashTable* listeners,
   for (item = list; item; item = g_list_next(item))
   {
     cometd_subscription* s = (cometd_subscription*) item->data;
-    printf("firing listener for channel: %s\n", s->channel);
     if (s->callback(h, message) != COMETD_SUCCESS) {
       goto error;
     }
@@ -170,8 +169,6 @@ cometd_listener_get(GHashTable* map, const char* channel)
   for (c = channels; c; c = g_list_next(c))
   {
     GList* list = (GList*) g_hash_table_lookup(map, c->data);
-
-    printf("channel match: %s\n", c->data);
 
     GList* s = NULL;
     for (s = list; s; s = g_list_next(s))

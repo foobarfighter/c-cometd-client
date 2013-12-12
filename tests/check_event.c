@@ -87,7 +87,6 @@ END_TEST
 
 START_TEST (test_cometd_listener_fire_exact_matches_first)
 {
-  printf("EXACT MATCHES\n");
   handler_data = NULL;
 
   cometd_listener_add(listeners, "/foo/*", handler1);
@@ -98,7 +97,6 @@ START_TEST (test_cometd_listener_fire_exact_matches_first)
   ck_assert_str_eq("two", g_list_nth_data(handler_data, 0));
   ck_assert_str_eq("one", g_list_nth_data(handler_data, 1));
   ck_assert_str_eq("one", g_list_nth_data(handler_data, 2));
-  printf("/EXACT MATCHES\n");
 }
 END_TEST
 

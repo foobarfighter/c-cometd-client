@@ -1,0 +1,6 @@
+{
+  "advice": {
+    "reconnect": "handshake",
+    "interval": 100
+  }
+}

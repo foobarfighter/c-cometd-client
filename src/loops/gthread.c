@@ -34,7 +34,7 @@ cometd_loop_gthread_run(gpointer data)
   JsonNode* node;
 
   const cometd* h = (const cometd*) data;
-  while (!(cometd_conn_is_status(h, COMETD_DISCONNECTED)) &&
+  while (!(cometd_conn_is_status(h->conn, COMETD_DISCONNECTED)) &&
          (node = cometd_recv(h)) != NULL)
   {
     cometd_inbox_push(h->inbox, node);

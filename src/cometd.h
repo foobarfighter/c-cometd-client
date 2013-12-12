@@ -33,6 +33,7 @@
 #define ECOMETD_HANDSHAKE         3
 #define ECOMETD_INIT_LOOP         4
 #define ECOMETD_UNKNOWN           5
+#define ECOMETD_NO_TRANSPORT      6
 
 // Other
 #define COMETD_MAX_CLIENT_ID_LEN 128
@@ -45,10 +46,12 @@
 // Forward declaration stuff
 struct _cometd;
 struct _cometd_conn;
+struct _cometd_advice;
 struct _cometd_subscription;
 struct _cometd_transport;
 typedef struct _cometd cometd;
 typedef struct _cometd_conn cometd_conn;
+typedef struct _cometd_advice cometd_advice;
 typedef struct _cometd_subscription cometd_subscription;
 typedef struct _cometd_transport cometd_transport;
 
@@ -169,13 +172,6 @@ void     cometd_channel_matches_free(GList* matches);
 int               cometd_error(const cometd* h, int code, char* message);
 gboolean          cometd_is_meta_channel(const char* channel);
 cometd_error_st*  cometd_last_error(const cometd* h);
-long              cometd_conn_status(const cometd* h);
-void              cometd_conn_set_status(const cometd* h, long status);
-long              cometd_conn_is_status(const cometd* h, long status);
-void              cometd_conn_clear_status(const cometd* h);
-char*             cometd_conn_client_id(const cometd* h);
-void              cometd_conn_set_client_id(const cometd* h, const char *id);
-void              cometd_conn_set_transport(const cometd* h, cometd_transport* t);
 GHashTable*       cometd_conn_subscriptions(const cometd* h);
 void              cometd_listen(const cometd* h);
 

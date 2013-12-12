@@ -73,16 +73,60 @@ START_TEST (test_cometd_msg_supported_connection_types)
 }
 END_TEST
 
+START_TEST (test_cometd_msg_advice_none)
+{
+  JsonNode* n = json_from_fixture("advice_reconnect_none");
+
+  cometd_advice* advice = cometd_msg_advice(n);
+  ck_assert_int_eq(COMETD_RECONNECT_NONE, advice->reconnect);
+  ck_assert_int_eq(0, advice->interval);
+}
+END_TEST
+
+START_TEST (test_cometd_msg_advice_handshake)
+{
+  JsonNode* n = json_from_fixture("advice_reconnect_handshake");
+
+  cometd_advice* advice = cometd_msg_advice(n);
+  ck_assert_int_eq(COMETD_RECONNECT_HANDSHAKE, advice->reconnect);
+  ck_assert_int_eq(100, advice->interval);
+}
+END_TEST
+
+START_TEST (test_cometd_msg_advice_retry)
+{
+  JsonNode* n = json_from_fixture("advice_reconnect_retry");
+
+  cometd_advice* advice = cometd_msg_advice(n);
+  ck_assert_int_eq(COMETD_RECONNECT_RETRY, advice->reconnect);
+  ck_assert_int_eq(100, advice->interval);
+}
+END_TEST
+
+START_TEST (test_cometd_msg_advice_null)
+{
+  JsonNode* n = json_from_fixture("advice_reconnect_null");
+
+  cometd_advice* advice = cometd_msg_advice(n);
+  fail_unless(advice == NULL);
+}
+END_TEST
+
 Suite* make_msg_suite (void)
 {
   Suite *s = suite_create ("cometd");
 
   TCase *tc_unit = tcase_create ("msg");
   tcase_add_checked_fixture (tc_unit, setup, teardown);
+  
   tcase_add_test (tc_unit, test_cometd_msg_is_successful);
   tcase_add_test (tc_unit, test_cometd_msg_has_data);
   tcase_add_test (tc_unit, test_cometd_msg_client_id);
   tcase_add_test (tc_unit, test_cometd_msg_supported_connection_types);
+  tcase_add_test (tc_unit, test_cometd_msg_advice_none);
+  tcase_add_test (tc_unit, test_cometd_msg_advice_handshake);
+  tcase_add_test (tc_unit, test_cometd_msg_advice_retry);
+  tcase_add_test (tc_unit, test_cometd_msg_advice_null);
 
   suite_add_tcase (s, tc_unit);
 

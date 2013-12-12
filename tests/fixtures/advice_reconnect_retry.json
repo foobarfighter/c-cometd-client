@@ -1,0 +1,6 @@
+{
+  "advice": {
+    "reconnect": "retry",
+    "interval": 100
+  }
+}

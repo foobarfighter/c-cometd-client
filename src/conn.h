@@ -9,10 +9,10 @@ typedef enum {
   COMETD_RECONNECT_HANDSHAKE
 } cometd_reconn_advice;
 
-typedef struct _cometd_advice {
+struct _cometd_advice {
   cometd_reconn_advice reconnect;
   long interval;
-} cometd_advice;
+};
 
 struct _cometd_conn {
   long               state;
@@ -24,10 +24,19 @@ struct _cometd_conn {
 };
 
 cometd_conn* cometd_conn_new(void);
+void         cometd_conn_set_transport(cometd_conn* conn, cometd_transport* t);
+const char*  cometd_conn_client_id(const cometd_conn* conn);
+void         cometd_conn_set_client_id(const cometd_conn* conn, const char* id);
+long         cometd_conn_status(const cometd_conn* conn);
+void         cometd_conn_set_status(cometd_conn* conn, long status);
+long         cometd_conn_is_status(const cometd_conn* conn, long status);
+void         cometd_conn_clear_status(cometd_conn* conn);
+
+
 cometd_advice* cometd_advice_new(void);
-void cometd_advice_destroy(cometd_advice* advice);
-gboolean cometd_advice_is_handshake(const cometd_advice* advice);
-gboolean cometd_advice_is_none(const cometd_advice* advice);
-void cometd_conn_take_advice(cometd_conn* conn, const cometd_advice* advice);
+void           cometd_advice_destroy(cometd_advice* advice);
+gboolean       cometd_advice_is_handshake(const cometd_advice* advice);
+gboolean       cometd_advice_is_none(const cometd_advice* advice);
+void           cometd_conn_take_advice(cometd_conn* conn, cometd_advice* advice);
 
 #endif /* COMETD_CONN_H */
