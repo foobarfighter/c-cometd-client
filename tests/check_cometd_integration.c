@@ -1,12 +1,4 @@
-#include <check.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <cometd.h>
-#include <json.h>
-
 #include "check_cometd.h"
-#include "test_helper.h"
 
 static cometd* g_instance = NULL;
 static GThread* listen_thread = NULL;

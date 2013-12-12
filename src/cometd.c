@@ -138,7 +138,7 @@ cometd_configure(cometd* h, cometd_opt opt, ...)
       break;
 
     case COMETDOPT_MAX_BACKOFF:
-      h->config->backoff_increment = va_arg(value, long);
+      h->config->max_backoff = va_arg(value, long);
       break;
   }
 
