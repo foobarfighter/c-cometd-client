@@ -16,7 +16,6 @@ static void teardown(void) {
 
 START_TEST (test_cometd_advice_is_handshake)
 {
-  fail_if(cometd_advice_is_handshake(NULL));
   advice->reconnect = COMETD_RECONNECT_HANDSHAKE;
   fail_unless(cometd_advice_is_handshake(advice));
 }
@@ -24,7 +23,6 @@ END_TEST
 
 START_TEST (test_cometd_advice_is_none)
 {
-  fail_if(cometd_advice_is_handshake(NULL));
   advice->reconnect = COMETD_RECONNECT_NONE;
   fail_unless(cometd_advice_is_none(advice));
 }

@@ -40,10 +40,6 @@ cometd_inbox_push_msg(cometd_inbox* inbox, JsonNode* node)
   const gchar* channel = json_object_get_string_member(msg,
                                     COMETD_MSG_CHANNEL_FIELD);
 
-  // TODO: Test system handshake handler fires first
-  // if (strcmp(channel, COMETD_CHANNEL_META_HANDSHAKE) == 0) {
-  //   cometd_process_handshake(h, save);
-  // }
   g_queue_push_tail(inbox->queue, save);
 
   g_cond_signal(inbox->c);
@@ -54,9 +50,6 @@ JsonNode*
 cometd_inbox_take(cometd_inbox* inbox)
 {
   JsonNode* node = NULL;
-  // if (loop->wait_for_data(loop, queue))
-  //   node = (JsonNode*) g_queue_pop_head(q);
-  // return node;
 
   GTimeVal wait_timeout;
   GTimeVal now;

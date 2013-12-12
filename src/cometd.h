@@ -7,7 +7,7 @@
 
 // Defaults
 #define DEFAULT_BACKOFF_INCREMENT     1000
-#define DEFAULT_MAX_BACKOFF           1000
+#define DEFAULT_MAX_BACKOFF           30000
 #define DEFAULT_MAX_NETWORK_DELAY     1000
 #define DEFAULT_APPEND_MESSAGE_TYPE   1
 #define DEFAULT_REQUEST_TIMEOUT       30000
@@ -72,7 +72,9 @@ typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
 typedef enum {
   COMETDOPT_URL = 0,
   COMETDOPT_REQUEST_TIMEOUT,
-  COMETDOPT_LOOP
+  COMETDOPT_LOOP,
+  COMETDOPT_BACKOFF_INCREMENT,
+  COMETDOPT_MAX_BACKOFF
 } cometd_opt;
 
 // connection configuration object

@@ -59,8 +59,7 @@ cometd_conn_take_advice(cometd_conn* conn, cometd_advice* advice)
 gboolean
 cometd_advice_is_handshake(const cometd_advice* advice)
 {
-  if (advice == NULL)
-    return FALSE;
+  g_assert(advice != NULL);
 
   return advice->reconnect == COMETD_RECONNECT_HANDSHAKE;
 }
@@ -68,8 +67,7 @@ cometd_advice_is_handshake(const cometd_advice* advice)
 gboolean
 cometd_advice_is_none(const cometd_advice* advice)
 {
-  if (advice == NULL)
-    return FALSE;
+  g_assert(advice != NULL);
 
   return advice->reconnect == COMETD_RECONNECT_NONE;
 }

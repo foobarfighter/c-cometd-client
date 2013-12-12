@@ -16,6 +16,8 @@ static void cometd_destroy_subscription(gpointer subscription);
 static void cometd_impl_set_sys_s(const cometd* h);
 static void cometd_impl_destroy_sys_s(const cometd* h);
 static int cometd_impl_process_sync(const cometd* h, JsonNode* array);
+static int cometd_impl_handshake(const cometd* h, cometd_callback cb);
+static long cometd_impl_compute_backoff(const cometd_config* config, long attempt);
 
 const gchar*
 cometd_get_channel(JsonObject* obj)
@@ -121,14 +123,23 @@ cometd_configure(cometd* h, cometd_opt opt, ...)
     case COMETDOPT_URL:
       h->config->url = va_arg(value, char*);
       break;
+
     case COMETDOPT_REQUEST_TIMEOUT:
       h->config->request_timeout = va_arg(value, long);
       break;
+
     case COMETDOPT_LOOP:
       cometd_loop_destroy(h->loop);
       h->loop = va_arg(value, cometd_loop*);
-    default:
-      return -1;
+      break;
+
+    case COMETDOPT_BACKOFF_INCREMENT:
+      h->config->backoff_increment = va_arg(value, long);
+      break;
+
+    case COMETDOPT_MAX_BACKOFF:
+      h->config->backoff_increment = va_arg(value, long);
+      break;
   }
 
   va_end(value);
@@ -296,7 +307,7 @@ cometd_handshake(const cometd* h, cometd_callback cb)
   {
     cometd_loop_wait(loop, backoff);
 
-    // code  = cometd_impl_handshake(h, cb);
+    code  = cometd_impl_handshake(h, cb);
     backoff = cometd_get_backoff(h, attempt);
 
     if (backoff == -1)
@@ -315,13 +326,24 @@ cometd_get_backoff(const cometd* h, long attempt)
   cometd_advice* advice = h->conn->advice;
 
   if (!advice)
-    backoff = attempt * config->backoff_increment;
+    backoff = cometd_impl_compute_backoff(config, attempt);
   else if (cometd_advice_is_handshake(advice))
     backoff = advice->interval;
   else if (cometd_advice_is_none(advice))
     backoff = -1;
 
   return backoff;
+}
+
+long
+cometd_impl_compute_backoff(const cometd_config* config, long attempt)
+{
+  if (!config->backoff_increment)
+    return -1;
+
+  long backoff = attempt * config->backoff_increment;
+
+  return (config->max_backoff && backoff < config->max_backoff) ? backoff : -1;
 }
 
 gboolean
@@ -335,54 +357,54 @@ cometd_should_handshake(const cometd* h)
     return FALSE;
   }
 
-  return cometd_advice_is_handshake(conn->advice);
+  return conn->advice == NULL || cometd_advice_is_handshake(conn->advice);
 }
 
-// int
-// cometd_impl_handshake(const cometd* h, cometd_callback cb)
-// {
+int
+cometd_impl_handshake(const cometd* h, cometd_callback cb)
+{
 
-//   JsonNode* handshake   = cometd_new_handshake_message(h);
-//   gchar*    data        = cometd_json_node2str(handshake);
-//   int       error_code  = COMETD_SUCCESS;  
+  JsonNode* handshake   = cometd_new_handshake_message(h);
+  gchar*    data        = cometd_json_node2str(handshake);
+  int       error_code  = COMETD_SUCCESS;  
 
-//   if (data == NULL){
-//     error_code = cometd_error(h, ECOMETD_JSON_SERIALIZE, "could not serialize json");
-//     goto free_handshake;
-//   }
+  if (data == NULL){
+    error_code = cometd_error(h, ECOMETD_JSON_SERIALIZE, "could not serialize json");
+    goto free_handshake;
+  }
   
-//   char* resp = http_json_post(h->config->url, data, h->config->request_timeout);
+  char* resp = http_json_post(h->config->url, data, h->config->request_timeout);
 
-//   if (resp == NULL){
-//     error_code = cometd_error(h, ECOMETD_HANDSHAKE, "could not handshake");
-//     goto free_data;
-//   }
+  if (resp == NULL){
+    error_code = cometd_error(h, ECOMETD_HANDSHAKE, "could not handshake");
+    goto free_data;
+  }
 
-//   JsonNode* payload = cometd_json_str2node(resp);
+  JsonNode* payload = cometd_json_str2node(resp);
 
-//   if (payload == NULL){
-//     error_code = cometd_error(h, ECOMETD_JSON_DESERIALIZE, "could not de-serialize json");
-//     goto free_resp;
-//   }
+  if (payload == NULL){
+    error_code = cometd_error(h, ECOMETD_JSON_DESERIALIZE, "could not de-serialize json");
+    goto free_resp;
+  }
 
-//   error_code = cometd_impl_process_sync(h, payload);
+  error_code = cometd_impl_process_sync(h, payload);
 
-//   if (!cometd_current_transport(h)){
-//     error_code = cometd_error(h, ECOMETD_NO_TRANSPORT, "could not find acceptable transport");
-//     goto free_payload;
-//   }
+  if (!cometd_current_transport(h)){
+    error_code = cometd_error(h, ECOMETD_NO_TRANSPORT, "could not find acceptable transport");
+    goto free_payload;
+  }
 
-// free_payload:
-//   json_node_free(payload);
-// free_resp:
-//   free(resp);
-// free_data:
-//   g_free(data);
-// free_handshake:
-//   json_node_free(handshake);
+free_payload:
+  json_node_free(payload);
+free_resp:
+  free(resp);
+free_data:
+  g_free(data);
+free_handshake:
+  json_node_free(handshake);
 
-//   return error_code;
-// }
+  return error_code;
+}
 
 int
 cometd_process_handshake(const cometd* h, JsonNode* msg)

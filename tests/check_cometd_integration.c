@@ -78,11 +78,13 @@ START_TEST (test_cometd_connect_success)
 END_TEST
 
 static unsigned int fail_loop_start(cometd_loop* loop) { return 1; }
+static void         fail_loop_wait (cometd_loop* h, long millis) {}
 
 START_TEST (test_cometd_connect_fail_init_loop)
 {
   cometd_loop fail_loop;
   fail_loop.start = fail_loop_start;
+  fail_loop.wait  = fail_loop_wait;
 
   cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
   cometd_configure(g_instance, COMETDOPT_LOOP, &fail_loop);
@@ -118,6 +120,7 @@ END_TEST
 START_TEST (test_cometd_handshake_failed_http)
 {
   cometd_configure(g_instance, COMETDOPT_URL, "http://localhost/service/does/not/exist");
+  cometd_configure(g_instance, COMETDOPT_BACKOFF_INCREMENT, 0);
 
   int code = cometd_handshake(g_instance, NULL);
   ck_assert_int_eq(ECOMETD_HANDSHAKE, code); 
@@ -127,6 +130,7 @@ END_TEST
 START_TEST (test_cometd_handshake_failed_http_timeout)
 {
   cometd_configure(g_instance, COMETDOPT_URL, TEST_LONG_REQUEST_URL);
+  cometd_configure(g_instance, COMETDOPT_BACKOFF_INCREMENT, 0);
   cometd_configure(g_instance, COMETDOPT_REQUEST_TIMEOUT, TEST_LONG_REQUEST_TIMEOUT);
 
   int code = cometd_handshake(g_instance, NULL);
@@ -137,6 +141,7 @@ END_TEST
 START_TEST (test_cometd_handshake_failed_json)
 {
   cometd_configure(g_instance, COMETDOPT_URL, TEST_BAD_JSON_URL);
+  cometd_configure(g_instance, COMETDOPT_BACKOFF_INCREMENT, 0);
   cometd_configure(g_instance, COMETDOPT_REQUEST_TIMEOUT, 1000);
 
   int code = cometd_handshake(g_instance, NULL);
