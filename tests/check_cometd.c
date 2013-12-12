@@ -391,6 +391,8 @@ START_TEST (test_cometd_process_message_no_transport)
   fail_unless(cometd_current_transport(g_instance) == NULL);
   fail_unless(cometd_conn_client_id(conn) == NULL);
   fail_if(cometd_conn_advice(conn) == NULL);
+
+  json_node_free(n);
 }
 END_TEST
 

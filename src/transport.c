@@ -22,6 +22,8 @@ cometd_transport_negotiate(GList* registry, JsonNode* n)
     }
   }
 
+  g_list_free(types);
+
   return transport;
 }
 

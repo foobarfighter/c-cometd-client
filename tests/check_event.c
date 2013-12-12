@@ -82,6 +82,8 @@ START_TEST (test_cometd_listener_fire_in_order)
 
   ck_assert_str_eq("one", g_list_nth_data(handler_data, 0));
   ck_assert_str_eq("two", g_list_nth_data(handler_data, 1));
+
+  g_list_free(handler_data);
 }
 END_TEST
 

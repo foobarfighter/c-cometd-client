@@ -80,6 +80,9 @@ START_TEST (test_cometd_msg_advice_none)
   cometd_advice* advice = cometd_msg_advice(n);
   ck_assert_int_eq(COMETD_RECONNECT_NONE, advice->reconnect);
   ck_assert_int_eq(0, advice->interval);
+  cometd_advice_destroy(advice);
+
+  json_node_free(n);
 }
 END_TEST
 
@@ -90,6 +93,9 @@ START_TEST (test_cometd_msg_advice_handshake)
   cometd_advice* advice = cometd_msg_advice(n);
   ck_assert_int_eq(COMETD_RECONNECT_HANDSHAKE, advice->reconnect);
   ck_assert_int_eq(100, advice->interval);
+  cometd_advice_destroy(advice);
+
+  json_node_free(n);
 }
 END_TEST
 
@@ -100,6 +106,9 @@ START_TEST (test_cometd_msg_advice_retry)
   cometd_advice* advice = cometd_msg_advice(n);
   ck_assert_int_eq(COMETD_RECONNECT_RETRY, advice->reconnect);
   ck_assert_int_eq(100, advice->interval);
+  cometd_advice_destroy(advice);
+
+  json_node_free(n);
 }
 END_TEST
 
@@ -109,6 +118,7 @@ START_TEST (test_cometd_msg_advice_null)
 
   cometd_advice* advice = cometd_msg_advice(n);
   fail_unless(advice == NULL);
+  json_node_free(n);
 }
 END_TEST
 

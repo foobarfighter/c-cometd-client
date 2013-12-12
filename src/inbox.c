@@ -85,6 +85,10 @@ cometd_inbox_take(cometd_inbox* inbox)
 void
 cometd_inbox_destroy(cometd_inbox* inbox)
 {
+  g_mutex_lock(inbox->m);
+  g_queue_free_full(inbox->queue, (GDestroyNotify) json_node_free);
+  g_mutex_unlock(inbox->m);
+
   inbox->loop = NULL;
   g_cond_clear(inbox->c);
   free(inbox->c);

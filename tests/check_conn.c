@@ -10,7 +10,8 @@ static void setup(void) {
 }
 
 static void teardown(void) {
-  // cometd_conn_destroy(conn);
+  cometd_conn_destroy(conn);
+  cometd_advice_destroy(advice);
 }
 
 START_TEST (test_cometd_advice_is_handshake)

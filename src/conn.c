@@ -15,6 +15,13 @@ cometd_conn_new(void)
   return conn;
 }
 
+void
+cometd_conn_destroy(cometd_conn* conn)
+{
+  cometd_advice_destroy(conn->advice);
+  free(conn);
+}
+
 cometd_advice*
 cometd_advice_new(void)
 {
@@ -27,7 +34,8 @@ cometd_advice_new(void)
 void
 cometd_advice_destroy(cometd_advice* advice)
 {
-  free(advice);
+  if (advice != NULL)
+    free(advice);
 }
 
 cometd_advice*
@@ -44,8 +52,7 @@ cometd_conn_advice(const cometd_conn* conn)
 void
 cometd_conn_take_advice(cometd_conn* conn, cometd_advice* advice)
 {
-  if (conn->advice != NULL)
-    cometd_advice_destroy(conn->advice);
+  cometd_advice_destroy(conn->advice);
   conn->advice = advice;
 }
 

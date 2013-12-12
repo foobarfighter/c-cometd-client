@@ -24,6 +24,7 @@ struct _cometd_conn {
 };
 
 cometd_conn* cometd_conn_new(void);
+void         cometd_conn_destroy(cometd_conn* conn);
 void         cometd_conn_set_transport(cometd_conn* conn, cometd_transport* t);
 const char*  cometd_conn_client_id(const cometd_conn* conn);
 void         cometd_conn_set_client_id(const cometd_conn* conn, const char* id);

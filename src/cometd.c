@@ -41,12 +41,6 @@ cometd_new(void)
   config->transports        = NULL;
   cometd_register_transport(config, &COMETD_TRANSPORT_LONG_POLLING);
 
-  // connection
-  GCond* cond = malloc(sizeof(GCond));
-  GMutex* mutex = malloc(sizeof(GMutex));
-  g_cond_init(cond);
-  g_mutex_init(mutex);
-
   h->conn = cometd_conn_new();                // connection
   h->loop = cometd_loop_new(gthread, h);      // run loop
   h->inbox = cometd_inbox_new(h->loop);       // inbox
@@ -104,10 +98,12 @@ cometd_destroy(cometd* h)
   free(h->config);
  
   cometd_listener_destroy(h->subscriptions);
+  cometd_conn_destroy(h->conn);
+  // cometd_loop_destroy(h->loop);
+  cometd_inbox_destroy(h->inbox);
 
   // error state
   free(h->last_error);
-  free(h->conn);
 
   // handle
   free(h);
@@ -399,9 +395,11 @@ cometd_process_handshake(const cometd* h, JsonNode* msg)
   int code = COMETD_SUCCESS;
   
   if (t) {
+    gchar* client_id = cometd_msg_client_id(msg);
     cometd_conn_set_transport(conn, t);
-    cometd_conn_set_client_id(conn, cometd_msg_client_id(msg));
+    cometd_conn_set_client_id(conn, client_id);
     cometd_conn_set_status(conn, COMETD_HANDSHAKE_SUCCESS);
+    g_free(client_id);
   } else {
     code = ECOMETD_NO_TRANSPORT;
   }

@@ -89,6 +89,8 @@ cometd_msg_supported_connection_types(JsonNode* node)
 
   types = g_list_reverse(types);
 
+  g_list_free(items);
+
   return types;
 }
 
