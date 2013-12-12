@@ -16,4 +16,4 @@ void cometd_inbox_push_msg(cometd_inbox* inbox, JsonNode* root);
 JsonNode* cometd_inbox_take(cometd_inbox* inbox);
 void cometd_inbox_destroy(cometd_inbox* inbox);
 
-#endif COMETD_INBOX_H
+#endif /* COMETD_INBOX_H */

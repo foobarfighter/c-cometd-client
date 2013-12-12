@@ -355,6 +355,43 @@ START_TEST (test_cometd_get_backoff)
 }
 END_TEST
 
+START_TEST (test_cometd_process_message_success)
+{
+  cometd_conn* conn = g_instance->conn;
+  JsonNode* n = json_from_fixture("handshake_resp_lp");
+
+  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+  fail_unless(cometd_current_transport(g_instance) == NULL);
+  fail_unless(cometd_conn_client_id(conn) == NULL);
+
+  int code = cometd_process_handshake(g_instance, n);
+
+  fail_unless(code == COMETD_SUCCESS);
+  fail_unless(cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
+  fail_if(cometd_current_transport(g_instance) == NULL);
+  fail_if(cometd_conn_client_id(conn) == NULL);
+}
+END_TEST
+
+START_TEST (test_cometd_process_message_no_transport)
+{
+  cometd_conn* conn = g_instance->conn;
+  JsonNode* n = json_from_fixture("handshake_resp_unsupported_transports");
+
+  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+  fail_unless(cometd_current_transport(g_instance) == NULL);
+  fail_unless(cometd_conn_client_id(conn) == NULL);
+
+  int code = cometd_process_handshake(g_instance, n);
+
+  fail_unless(code == ECOMETD_NO_TRANSPORT);
+  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+  fail_unless(cometd_current_transport(g_instance) == NULL);
+  fail_unless(cometd_conn_client_id(conn) == NULL);
+  fail_if(cometd_conn_advice(conn) == NULL);
+}
+END_TEST
+
 Suite* make_cometd_unit_suite (void)
 {
   Suite *s = suite_create ("Cometd");
@@ -378,6 +415,8 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_channel_is_wildcard);
   tcase_add_test (tc_unit, test_cometd_should_handshake);
   tcase_add_test (tc_unit, test_cometd_get_backoff);
+  tcase_add_test (tc_unit, test_cometd_process_message_success);
+  tcase_add_test (tc_unit, test_cometd_process_message_no_transport);
   suite_add_tcase (s, tc_unit);
 
   return s;

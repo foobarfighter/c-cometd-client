@@ -92,6 +92,12 @@ cometd_msg_supported_connection_types(JsonNode* node)
   return types;
 }
 
+/**
+ * Returns a cometd_advice pointer that should be free'd by the caller.
+ * Returns NULL if advice cannot be found.
+ *
+ * See also: http://svn.cometd.com/trunk/bayeux/bayeux.html#toc_32
+ */
 cometd_advice*
 cometd_msg_advice(JsonNode* node)
 {

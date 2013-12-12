@@ -405,9 +405,9 @@ cometd_process_handshake(const cometd* h, JsonNode* msg)
   } else {
     code = ECOMETD_NO_TRANSPORT;
   }
-  // cometd_conn_set_advice(conn, cometd_msg_advice(msg));
+  cometd_conn_take_advice(conn, cometd_msg_advice(msg));
 
-  return COMETD_SUCCESS;
+  return code;
 }
 
 gboolean
