@@ -370,6 +370,8 @@ START_TEST (test_cometd_process_message_success)
   fail_unless(cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
   fail_if(cometd_current_transport(g_instance) == NULL);
   fail_if(cometd_conn_client_id(conn) == NULL);
+
+  json_node_free(n);
 }
 END_TEST
 

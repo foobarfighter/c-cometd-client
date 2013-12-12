@@ -228,10 +228,11 @@ char* read_file(char* path)
     fseek (f, 0, SEEK_END);
     length = ftell (f);
     fseek (f, 0, SEEK_SET);
-    buffer = malloc (length);
+    buffer = malloc (length+1);
     if (buffer)
     {
       fread (buffer, 1, length, f);
+      buffer[length] = '\0';
     }
     fclose (f);
   }
@@ -243,11 +244,18 @@ JsonNode*
 json_from_fixture(char* fixture_name)
 {
   JsonNode* n;
+  char* contents;
   char path[255];
 
   sprintf(path, "../../tests/fixtures/%s.json", fixture_name);
-  n = cometd_json_str2node(read_file(path));
+  contents = read_file(path);
+
+  if (contents == NULL)
+    printf("Can't read file at path: %s\n", path);
+
+  n = cometd_json_str2node(contents);
   g_assert(n != NULL);
 
+  free(contents);
   return n;
 }

@@ -292,7 +292,7 @@ cometd_handshake(const cometd* h, cometd_callback cb)
   cometd_loop* loop = h->loop;
   cometd_conn* conn = h->conn;
 
-  int code;
+  int code = ECOMETD_UNKNOWN;
   long backoff = 0;
 
   guint attempt;
