@@ -58,6 +58,7 @@ typedef JsonNode* (*cometd_send_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
 
 #include "conn.h"
+#include "transport.h"
 #include "event.h"
 #include "msg.h"
 #include "json.h"
@@ -70,12 +71,6 @@ typedef enum {
   COMETDOPT_REQUEST_TIMEOUT,
   COMETDOPT_LOOP
 } cometd_opt;
-
-struct _cometd_transport {
-  char*                name;
-  cometd_send_callback send;
-  cometd_recv_callback recv;
-};
 
 // connection configuration object
 typedef struct {

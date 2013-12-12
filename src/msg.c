@@ -68,3 +68,25 @@ cometd_msg_client_id(JsonNode* node){
 
   return g_strdup(client_id);
 }
+
+GList*
+cometd_msg_supported_connection_types(JsonNode* node)
+{
+  g_return_val_if_fail(JSON_NODE_HOLDS_OBJECT (node), NULL);
+
+  JsonObject* obj = json_node_get_object(node);
+  JsonArray* arr = json_object_get_array_member(obj, "supportedConnectionTypes");
+
+  if (!arr)
+    return NULL;
+
+  GList *types = NULL, *ielem = NULL;
+  GList* items = json_array_get_elements(arr);
+
+  for (ielem = items; ielem; ielem = g_list_next(ielem))
+    types = g_list_prepend(types, json_node_get_string(ielem->data));
+
+  types = g_list_reverse(types);
+
+  return types;
+}

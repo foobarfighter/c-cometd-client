@@ -17,5 +17,6 @@ gboolean cometd_msg_is_successful(JsonNode* node);
 gboolean cometd_msg_has_data(JsonNode* node);
 const gchar* cometd_msg_get_channel(JsonNode* node);
 gchar* cometd_msg_client_id(JsonNode* node);
+GList* cometd_msg_supported_connection_types(JsonNode* node);
 
 #endif // COMETD_MSG_H

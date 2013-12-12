@@ -23,4 +23,7 @@ int test_empty_handler(const cometd* h, JsonNode* message);
 // json matchers
 gboolean json_node_equal(JsonNode* a, JsonNode* b, GList* excludes);
 
+// json fixtures
+JsonNode* json_from_fixture(char* fixture_name);
+
 #endif // TEST_HELPER_H

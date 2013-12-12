@@ -1,0 +1,10 @@
+{
+  "channel": "/meta/handshake",
+  "version": "1.0",
+  "minimumVersion": "1.0beta",
+  "supportedConnectionTypes": ["made-up-transport", "test-transport", "uno-mas"],
+  "clientId": "Un1q31d3nt1f13r",
+  "successful": true,
+  "authSuccessful": true,
+  "advice": { "reconnect": "retry" }
+}

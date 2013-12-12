@@ -391,7 +391,7 @@ cometd_process_handshake(const cometd* h, JsonNode* msg)
 {
   int code = COMETD_SUCCESS;
 
-  // cometd_conn* conn = h->conn;
+  cometd_conn* conn = h->conn;
   // cometd_transport* t = cometd_transport_negotiate(h->transports, msg);
 
   // if (t) {

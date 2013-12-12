@@ -12,6 +12,7 @@ add_executable(check_cometd check_cometd_main.c
                             check_event.c
                             check_msg.c
                             check_conn.c
+                            check_transport.c
                             check_cometd_integration.c
                             check_http.c
                             check_cometd_inbox.c

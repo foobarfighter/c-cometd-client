@@ -7,6 +7,7 @@ include_directories (${GLIB2_INCLUDE_DIR}
 
 add_library(cometd cometd.c
                    conn.c
+                   transport.c
                    event.c
                    json.c
                    msg.c

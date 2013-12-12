@@ -1,6 +1,7 @@
 #include <check.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <glib.h>
 #include "json.h"
 #include "../tests/test_helper.h"
@@ -214,4 +215,39 @@ json_node_equal(JsonNode* a, JsonNode* b, GList* exclude_props)
   }
 
   return FALSE;
+}
+
+char* read_file(char* path)
+{
+  char* buffer = 0;
+  long length;
+  FILE* f = fopen (path, "rb");
+
+  if (f)
+  {
+    fseek (f, 0, SEEK_END);
+    length = ftell (f);
+    fseek (f, 0, SEEK_SET);
+    buffer = malloc (length);
+    if (buffer)
+    {
+      fread (buffer, 1, length, f);
+    }
+    fclose (f);
+  }
+
+  return buffer;
+}
+
+JsonNode*
+json_from_fixture(char* fixture_name)
+{
+  JsonNode* n;
+  char path[255];
+
+  sprintf(path, "../../tests/fixtures/%s.json", fixture_name);
+  n = cometd_json_str2node(read_file(path));
+  g_assert(n != NULL);
+
+  return n;
 }
