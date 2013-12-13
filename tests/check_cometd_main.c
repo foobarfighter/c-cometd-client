@@ -15,6 +15,7 @@ main (void)
   srunner_add_suite (sr, make_conn_suite());
   srunner_add_suite (sr, make_transport_suite());
   srunner_add_suite (sr, make_channel_suite());
+  srunner_add_suite (sr, make_ext_suite());
   srunner_add_suite (sr, make_http_integration_suite ());
   srunner_add_suite (sr, make_test_helper_suite ());
   srunner_add_suite (sr, make_cometd_event_suite ());

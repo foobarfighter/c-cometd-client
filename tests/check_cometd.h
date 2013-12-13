@@ -12,6 +12,7 @@ Suite* make_msg_suite (void);
 Suite* make_conn_suite (void);
 Suite* make_transport_suite (void);
 Suite* make_channel_suite (void);
+Suite* make_ext_suite (void);
 Suite* make_cometd_inbox_suite (void);
 Suite* make_cometd_event_suite (void);
 Suite* make_test_helper_suite (void);

@@ -49,11 +49,13 @@ struct _cometd_conn;
 struct _cometd_advice;
 struct _cometd_subscription;
 struct _cometd_transport;
+struct _cometd_ext;
 typedef struct _cometd cometd;
 typedef struct _cometd_conn cometd_conn;
 typedef struct _cometd_advice cometd_advice;
 typedef struct _cometd_subscription cometd_subscription;
 typedef struct _cometd_transport cometd_transport;
+typedef struct _cometd_ext cometd_ext;
 
 // Transport callback functions
 typedef int       (*cometd_callback)(const cometd* h, JsonNode* message);
@@ -69,6 +71,7 @@ typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
 #include "loop.h"
 #include "inbox.h"
 #include "http.h"
+#include "ext.h"
 
 // Configuration options
 typedef enum {
@@ -113,6 +116,7 @@ struct _cometd {
   cometd_inbox*    inbox;
   GHashTable*      subscriptions;
   cometd_sys_s     sys_s;
+  GList*           exts;
 };
 
 

@@ -7,14 +7,15 @@ include_directories (${GLIB2_INCLUDE_DIR}
 
 add_library(cometd cometd.c
                    conn.c
-                   transport.c
                    channel.c
                    event.c
                    json.c
                    msg.c
                    http.c
-                   transport_long_polling.c
                    inbox.c
+                   ext.c
+                   transport.c
+                   transport_long_polling.c
                    loop.c
                    loops/gthread.c)
 
