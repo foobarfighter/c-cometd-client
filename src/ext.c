@@ -1,5 +1,10 @@
 #include "ext.h"
 
+static void cometd_impl_ext_fire(GList* exts,
+                                 cometd* h,
+                                 JsonNode* n,
+                                 gboolean incoming);
+
 cometd_ext*
 cometd_ext_new(void)
 {
@@ -24,27 +29,13 @@ cometd_ext_destroy(cometd_ext* ext)
 void
 cometd_ext_fire_incoming(GList* exts, cometd* h, JsonNode* n)
 {
-  GList* iext;
-  for (iext = exts; iext; iext = g_list_next(iext))
-  {
-    cometd_ext* ext = iext->data;
-
-    if (ext->incoming)
-      ext->incoming(h, n);
-  }
+  cometd_impl_ext_fire(exts, h, n, TRUE);
 }
 
 void
 cometd_ext_fire_outgoing(GList* exts, cometd* h, JsonNode* n)
 {
-  GList* iext;
-  for (iext = exts; iext; iext = g_list_next(iext))
-  {
-    cometd_ext* ext = iext->data;
-    
-    if (ext->outgoing)
-      ext->outgoing(h, n);
-  }
+  cometd_impl_ext_fire(exts, h, n, FALSE);
 }
 
 void
@@ -58,4 +49,23 @@ cometd_ext_remove(GList** exts, cometd_ext* ext)
 {
   *exts = g_list_remove(*exts, ext);
   cometd_ext_destroy(ext);
+}
+
+void
+cometd_impl_ext_fire(GList* exts, cometd* h, JsonNode* n, gboolean incoming)
+{
+  GList* iext;
+  for (iext = exts; iext; iext = g_list_next(iext))
+  {
+    cometd_ext* ext = iext->data;
+
+    if (incoming) {
+      if (ext->incoming)
+        ext->incoming(h, n);
+    } else {
+      if (ext->outgoing)
+        ext->outgoing(h, n);
+    }
+
+  }
 }
