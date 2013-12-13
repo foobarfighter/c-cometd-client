@@ -1,7 +1,6 @@
 #include "check_cometd.h"
 
 static cometd* g_instance = NULL;
-
 static guint test_transport_send_calls = 0;
 static guint test_transport_recv_calls = 0;
 
@@ -21,7 +20,6 @@ static cometd_transport TEST_TRANSPORT = {
    test_transport_recv
 };
 
-
 static void setup (void)
 {
   log_clear();
@@ -36,10 +34,6 @@ static void teardown (void)
 {
   cometd_destroy(g_instance);
 }
-
-/*
- *  Unit Test Suite
- */
 
 START_TEST (test_cometd_transport)
 {
@@ -99,7 +93,7 @@ START_TEST (test_cometd_new_connect_message)
 END_TEST
 
 START_TEST (test_cometd_new_handshake_message){
-  long seed = g_instance->conn->_msg_id_seed;
+  long seed = g_instance->conn->msg_id_seed;
 
   JsonNode* msg = cometd_new_handshake_message(g_instance);
   JsonObject* obj = json_node_get_object(msg);

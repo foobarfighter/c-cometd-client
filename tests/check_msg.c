@@ -60,7 +60,7 @@ START_TEST (test_cometd_msg_supported_connection_types)
   ck_assert_str_eq("test-transport", g_list_nth_data(types, 1));
   ck_assert_str_eq("uno-mas", g_list_nth_data(types, 2));
 
-  g_list_free(types);
+  g_list_free_full(types, g_free);
   json_node_free(n);
 }
 END_TEST

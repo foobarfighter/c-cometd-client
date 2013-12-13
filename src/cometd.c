@@ -4,8 +4,8 @@
 
 int  cometd_debug_handler (const cometd*, JsonNode*);
 static void cometd_destroy_subscription(gpointer subscription);
-static void cometd_impl_set_sys_s(const cometd* h);
-static void cometd_impl_destroy_sys_s(const cometd* h);
+static void cometd_impl_set_sys_s(cometd* h);
+static void cometd_impl_destroy_sys_s(cometd* h);
 static int cometd_impl_process_sync(const cometd* h, JsonNode* array);
 static int cometd_impl_handshake(const cometd* h, cometd_callback cb);
 static long cometd_impl_compute_backoff(const cometd_config* config, long attempt);
@@ -58,9 +58,9 @@ cometd_new(void)
 }
 
 void
-cometd_impl_set_sys_s(const cometd* h)
+cometd_impl_set_sys_s(cometd* h)
 {
-  cometd_sys_s* handlers = &(h->sys_s); 
+  cometd_sys_s* handlers = &h->sys_s; 
 
   handlers->handshake = cometd_add_listener(h, COMETD_CHANNEL_META_HANDSHAKE,
                                            cometd_process_handshake);
@@ -71,9 +71,9 @@ cometd_impl_set_sys_s(const cometd* h)
 }
 
 void
-cometd_impl_destroy_sys_s(const cometd* h)
+cometd_impl_destroy_sys_s(cometd* h)
 {
-  cometd_sys_s* handlers = &(h->sys_s);
+  cometd_sys_s* handlers = &h->sys_s;
   cometd_remove_listener(h, handlers->handshake);
 }
 
@@ -490,7 +490,7 @@ cometd_new_connect_message(const cometd* h){
   JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
   JsonObject* obj  = json_object_new();
 
-  gint64 seed = ++(h->conn->_msg_id_seed);
+  gint64 seed = ++(h->conn->msg_id_seed);
   char*  connection_type = cometd_current_transport(h)->name;
 
   json_object_set_int_member   (obj, COMETD_MSG_ID_FIELD,      seed);
@@ -506,7 +506,7 @@ cometd_new_connect_message(const cometd* h){
 JsonNode*
 cometd_new_handshake_message(const cometd* h)
 {
-  gint64 seed = ++(h->conn->_msg_id_seed);
+  gint64 seed = ++(h->conn->msg_id_seed);
 
   JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
   JsonObject* obj  = json_object_new();
@@ -544,7 +544,7 @@ cometd_new_publish_message(const cometd* h,
                            const char* channel,
                            JsonNode* data)
 {
-  gint64 seed = ++(h->conn->_msg_id_seed);
+  gint64 seed = ++(h->conn->msg_id_seed);
 
   JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
   JsonObject* obj  = json_object_new();
@@ -572,7 +572,7 @@ JsonNode*
 cometd_new_subscribe_message(const cometd* h, const char* channel)
 {
   
-  gint64 seed = ++(h->conn->_msg_id_seed);
+  gint64 seed = ++(h->conn->msg_id_seed);
 
   JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
   JsonObject* obj  = json_object_new();
@@ -600,7 +600,7 @@ JsonNode*
 cometd_new_unsubscribe_message(const cometd* h, const char* channel)
 {
   
-  gint64 seed = ++(h->conn->_msg_id_seed);
+  gint64 seed = ++(h->conn->msg_id_seed);
 
   JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
   JsonObject* obj  = json_object_new();

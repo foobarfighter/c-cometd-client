@@ -6,11 +6,12 @@ cometd_conn*
 cometd_conn_new(void)
 {
   cometd_conn* conn = malloc(sizeof(cometd_conn));
-  conn->state = COMETD_UNINITIALIZED;
-  conn->transport = NULL;
-  conn->_msg_id_seed = 0;
 
-  conn->advice = NULL;
+  conn->client_id = NULL;
+  conn->transport = NULL;
+  conn->advice    = NULL;
+  conn->msg_id_seed = 0;
+  conn->state = COMETD_UNINITIALIZED;
 
   return conn;
 }
@@ -18,6 +19,9 @@ cometd_conn_new(void)
 void
 cometd_conn_destroy(cometd_conn* conn)
 {
+  if (conn->client_id != NULL)
+    free(conn->client_id);
+
   cometd_advice_destroy(conn->advice);
   free(conn);
 }
@@ -92,18 +96,15 @@ cometd_conn_client_id(const cometd_conn* conn)
 {
   g_return_val_if_fail(conn != NULL, NULL);
 
-  gboolean has_id = cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS);
-
-  return has_id ? conn->client_id : NULL;
+  return conn->client_id;
 }
 
 void
-cometd_conn_set_client_id(const cometd_conn* conn, const char* id)
+cometd_conn_set_client_id(cometd_conn* conn, const char* id)
 {
   g_assert(id != NULL);
-  g_assert(strnlen(id, COMETD_MAX_CLIENT_ID_LEN) < COMETD_MAX_CLIENT_ID_LEN);
 
-  strncpy(conn->client_id, id, COMETD_MAX_CLIENT_ID_LEN - 1);
+  conn->client_id = strdup(id);
 }
 
 void

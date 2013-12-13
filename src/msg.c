@@ -91,7 +91,7 @@ cometd_msg_supported_connection_types(JsonNode* node)
   GList* items = json_array_get_elements(arr);
 
   for (ielem = items; ielem; ielem = g_list_next(ielem))
-    types = g_list_prepend(types, json_node_get_string(ielem->data));
+    types = g_list_prepend(types, json_node_dup_string(ielem->data));
 
   types = g_list_reverse(types);
 
