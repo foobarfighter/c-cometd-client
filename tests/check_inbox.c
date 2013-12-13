@@ -1,6 +1,4 @@
-#include <check.h>
 #include "check_cometd.h"
-#include "cometd.h"
 
 static cometd_inbox* inbox = NULL;
 
