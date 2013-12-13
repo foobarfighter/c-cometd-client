@@ -68,6 +68,7 @@ typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
 #include "json.h"
 #include "loop.h"
 #include "inbox.h"
+#include "http.h"
 
 // Configuration options
 typedef enum {

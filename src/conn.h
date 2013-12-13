@@ -23,15 +23,16 @@ struct _cometd_conn {
   char client_id[COMETD_MAX_CLIENT_ID_LEN];
 };
 
-cometd_conn* cometd_conn_new(void);
-void         cometd_conn_destroy(cometd_conn* conn);
-void         cometd_conn_set_transport(cometd_conn* conn, cometd_transport* t);
-const char*  cometd_conn_client_id(const cometd_conn* conn);
-void         cometd_conn_set_client_id(const cometd_conn* conn, const char* id);
-long         cometd_conn_status(const cometd_conn* conn);
-void         cometd_conn_set_status(cometd_conn* conn, long status);
-long         cometd_conn_is_status(const cometd_conn* conn, long status);
-void         cometd_conn_clear_status(cometd_conn* conn);
+cometd_conn*   cometd_conn_new(void);
+const cometd_advice* cometd_conn_advice(const cometd_conn* conn);
+void           cometd_conn_destroy(cometd_conn* conn);
+void           cometd_conn_set_transport(cometd_conn* conn, cometd_transport* t);
+const char*    cometd_conn_client_id(const cometd_conn* conn);
+void           cometd_conn_set_client_id(const cometd_conn* conn, const char* id);
+long           cometd_conn_status(const cometd_conn* conn);
+void           cometd_conn_set_status(cometd_conn* conn, long status);
+long           cometd_conn_is_status(const cometd_conn* conn, long status);
+void           cometd_conn_clear_status(cometd_conn* conn);
 
 
 cometd_advice* cometd_advice_new(void);

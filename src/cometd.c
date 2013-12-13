@@ -1,17 +1,6 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stddef.h>
-#include <assert.h>
-#include <json-glib/json-glib.h>
-
-//#include "ev.h"
 #include "cometd.h"
-#include "json.h"
-#include "http.h"
 #include "transport_long_polling.h"
-
-
+#include <stdlib.h>
 
 int  cometd_debug_handler (const cometd*, JsonNode*);
 static void cometd_destroy_subscription(gpointer subscription);
@@ -20,14 +9,6 @@ static void cometd_impl_destroy_sys_s(const cometd* h);
 static int cometd_impl_process_sync(const cometd* h, JsonNode* array);
 static int cometd_impl_handshake(const cometd* h, cometd_callback cb);
 static long cometd_impl_compute_backoff(const cometd_config* config, long attempt);
-
-const gchar*
-cometd_get_channel(JsonObject* obj)
-{
-  g_assert(obj != NULL);
-
-  return json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
-}
 
 static gboolean g_types_initialized = FALSE;
 static void cometd_types_init(void)
@@ -212,15 +193,14 @@ cometd_listen(const cometd* h)
   while (cometd_conn_is_status(h->conn, COMETD_DISCONNECTED) == FALSE &&
          cometd_conn_is_status(h->conn, COMETD_UNINITIALIZED) == FALSE)
   {
-    JsonNode* node;
+    JsonNode* msg;
 
-    while (node = cometd_inbox_take(h->inbox))
+    while (msg = cometd_inbox_take(h->inbox))
     {
-      JsonObject* msg = json_node_get_object(node);
-
-      const gchar* channel = cometd_get_channel(msg);
-      cometd_fire_listeners(h, channel, node);
-      json_node_free(node);
+      char* channel = cometd_msg_channel(msg);
+      cometd_fire_listeners(h, channel, msg);
+      json_node_free(msg);
+      free(channel);
     }
   }
 }
@@ -462,7 +442,6 @@ GHashTable* cometd_conn_subscriptions(const cometd* h)
 int
 cometd_error(const cometd* h, int code, char* message)
 {
-  printf("%d: %s\n", code, message);
   h->last_error->code = code;
   h->last_error->message = message;
   return code;
@@ -487,7 +466,7 @@ cometd_impl_process_sync(const cometd* h, JsonNode* root)
   GList* item;
   for (item = msgs; item; item = g_list_next(item))
   {
-    const JsonNode* msg = item->data;
+    JsonNode* msg = item->data;
     char* channel = cometd_msg_channel(msg);
     cometd_fire_listeners(h, channel, msg);
     free(channel);

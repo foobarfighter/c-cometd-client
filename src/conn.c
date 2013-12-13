@@ -38,7 +38,7 @@ cometd_advice_destroy(cometd_advice* advice)
     free(advice);
 }
 
-cometd_advice*
+const cometd_advice*
 cometd_conn_advice(const cometd_conn* conn)
 {
   return conn->advice;
