@@ -62,6 +62,7 @@ typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
 
 #include "conn.h"
 #include "transport.h"
+#include "channel.h"
 #include "event.h"
 #include "msg.h"
 #include "json.h"
@@ -164,11 +165,6 @@ void cometd_destroy_transport(gpointer transport);
 
 // processing
 int  cometd_process_handshake(const cometd* h, JsonNode* root);
-
-// channels
-gboolean cometd_channel_is_wildcard(const char* channel);
-GList*   cometd_channel_matches(const char* channel);
-void     cometd_channel_matches_free(GList* matches);
 
 // other
 int               cometd_error(const cometd* h, int code, char* message);

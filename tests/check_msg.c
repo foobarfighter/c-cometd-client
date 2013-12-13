@@ -1,13 +1,5 @@
 #include "check_cometd.h"
 
-static void setup (void)
-{
-}
-
-static void teardown (void)
-{
-}
-
 static void
 assert_bool_node_func(char *str,
                       gboolean (*cb)(JsonNode* n),
@@ -127,7 +119,6 @@ Suite* make_msg_suite (void)
   Suite *s = suite_create ("cometd");
 
   TCase *tc_unit = tcase_create ("msg");
-  tcase_add_checked_fixture (tc_unit, setup, teardown);
   
   tcase_add_test (tc_unit, test_cometd_msg_is_successful);
   tcase_add_test (tc_unit, test_cometd_msg_has_data);

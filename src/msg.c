@@ -1,4 +1,5 @@
 #include "msg.h"
+#include <string.h>
 
 /**
  * Takes a JsonNode and does its best to determine if
@@ -46,27 +47,32 @@ cometd_msg_has_data(JsonNode* node)
 /**
  * Returns the channel of the message as a new string
  */
-const gchar*
-cometd_msg_get_channel(JsonNode* node)
+char*
+cometd_msg_channel(JsonNode* node)
 {
   g_return_val_if_fail(JSON_NODE_HOLDS_OBJECT (node), NULL);
+
+  const char* channel;
+
   JsonObject* obj = json_node_get_object(node);
-  return json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
+  channel = json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
+
+  return strdup(channel);
 }
 
 /**
  * Returns the client id of the message as a new string
  */
-gchar*
+char*
 cometd_msg_client_id(JsonNode* node){
   g_return_val_if_fail(JSON_NODE_HOLDS_OBJECT (node), NULL);
 
-  const gchar* client_id;
+  const char* client_id;
 
   JsonObject* obj = json_node_get_object(node);
   client_id = json_object_get_string_member(obj, COMETD_MSG_CLIENT_ID_FIELD);
 
-  return g_strdup(client_id);
+  return strdup(client_id);
 }
 
 GList*

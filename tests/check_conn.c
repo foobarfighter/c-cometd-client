@@ -28,6 +28,23 @@ START_TEST (test_cometd_advice_is_none)
 }
 END_TEST
 
+START_TEST (test_cometd_conn_status)
+{
+  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+
+  cometd_conn_set_status(conn, COMETD_HANDSHAKE_SUCCESS);
+  fail_unless(cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
+
+  cometd_conn_set_status(conn, COMETD_CONNECTED);
+  fail_unless(cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
+  fail_unless(cometd_conn_is_status(conn, COMETD_CONNECTED));
+
+  cometd_conn_clear_status(conn);
+
+  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+}
+END_TEST
+
 Suite* make_conn_suite (void)
 {
   Suite *s = suite_create ("cometd");
@@ -36,6 +53,7 @@ Suite* make_conn_suite (void)
   tcase_add_checked_fixture (tc_unit, setup, teardown);
   tcase_add_test (tc_unit, test_cometd_advice_is_handshake);
   tcase_add_test (tc_unit, test_cometd_advice_is_none);
+  tcase_add_test (tc_unit, test_cometd_conn_status);
   suite_add_tcase (s, tc_unit);
 
   return s;

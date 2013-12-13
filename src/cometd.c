@@ -11,6 +11,8 @@
 #include "http.h"
 #include "transport_long_polling.h"
 
+
+
 int  cometd_debug_handler (const cometd*, JsonNode*);
 static void cometd_destroy_subscription(gpointer subscription);
 static void cometd_impl_set_sys_s(const cometd* h);
@@ -27,9 +29,21 @@ cometd_get_channel(JsonObject* obj)
   return json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
 }
 
+static gboolean g_types_initialized = FALSE;
+static void cometd_types_init(void)
+{
+  if (!g_types_initialized) {
+    g_type_init();
+    g_types_initialized = TRUE; 
+  }
+}
+
 cometd*
 cometd_new(void)
 {
+  // we need to initialize glib :-/
+  cometd_types_init();
+
   cometd* h = malloc(sizeof(cometd));
 
   // config
@@ -474,8 +488,9 @@ cometd_impl_process_sync(const cometd* h, JsonNode* root)
   for (item = msgs; item; item = g_list_next(item))
   {
     const JsonNode* msg = item->data;
-    const char* channel = cometd_msg_get_channel(msg);
+    char* channel = cometd_msg_channel(msg);
     cometd_fire_listeners(h, channel, msg);
+    free(channel);
   }
   g_list_free(msgs);
 
@@ -697,59 +712,3 @@ cometd_destroy_transport(gpointer transport)
 {
   g_free(transport);
 }
-
-gboolean
-cometd_channel_is_wildcard(const char* channel)
-{
-  g_assert(channel != NULL);
-  return *(channel + strnlen(channel, COMETD_MAX_CHANNEL_LEN) - 1) == '*';
-}
-
-void
-cometd_channel_matches_free(GList* matches)
-{
-  g_list_free_full(matches, g_free);
-}
-
-GList* cometd_channel_matches(const char* channel)
-{
-  g_return_val_if_fail(channel != NULL, NULL);
-
-  GList* channels  = NULL;
-  char** parts     = g_strsplit(channel, "/", 0);
-  guint  parts_len = g_strv_length(parts);
-
-  if (parts_len > COMETD_MAX_CHANNEL_PARTS) 
-    goto free_parts;
-
-  // 254+2 because tmp needs space for (wildcard part + NULL)
-  char* tmp[COMETD_MAX_CHANNEL_PARTS+2] = { NULL };
-
-  guint i;
-  for (i = 0; i < parts_len; i++)
-  {
-    tmp[i]   = parts[i];
-
-    // add double wildcard
-    if (i < parts_len - 1)
-    {
-      tmp[i+1] = "**";
-      channels = g_list_prepend(channels, g_strjoinv("/", tmp));
-    // add base channel
-    } else {
-      channels = g_list_prepend(channels, g_strjoinv("/", tmp));
-    }
-    
-    // add single wildcard
-    if (i == parts_len - 2)
-    {
-      tmp[i+1] = "*";
-      channels = g_list_prepend(channels, g_strjoinv("/", tmp));
-    }
-  }
-
-free_parts:
-  g_strfreev(parts);
-  return channels;
-}
-

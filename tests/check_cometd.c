@@ -1,14 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <check.h>
-#include <glib.h>
-#include <signal.h>
-
 #include "check_cometd.h"
-#include "cometd.h"
-#include "json.h"
-#include "transport_long_polling.h"
-#include "test_helper.h"
 
 static cometd* g_instance = NULL;
 
@@ -242,68 +232,6 @@ START_TEST (test_cometd_is_meta_channel)
 }
 END_TEST
 
-START_TEST (test_cometd_conn_status)
-{
-  cometd_conn* conn = g_instance->conn;
-
-  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
-
-  cometd_conn_set_status(conn, COMETD_HANDSHAKE_SUCCESS);
-  fail_unless(cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
-
-  cometd_conn_set_status(conn, COMETD_CONNECTED);
-  fail_unless(cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
-  fail_unless(cometd_conn_is_status(conn, COMETD_CONNECTED));
-
-  cometd_conn_clear_status(conn);
-
-  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
-}
-END_TEST
-
-static void
-dump_channel_matches(const char* c, GList* channels)
-{
-  GList* channel;
-  printf("dumping matching channels for: %s\n", c);
-  for (channel = channels; channel; channel = g_list_next(channel))
-  {
-    printf("matching channel: %s\n", (char*) channel->data);
-  }
-  printf("\n\n");
-}
-
-START_TEST (test_cometd_channel_matches)
-{
-  GList* c1 = cometd_channel_matches("/foo/bar/baz");
-  dump_channel_matches("/foo/bar/baz", c1);
-
-  ck_assert_int_eq(5, g_list_length(c1));
-  fail_if(g_list_find_custom(c1, "/**", (GCompareFunc)strcmp) == NULL);
-  fail_if(g_list_find_custom(c1, "/foo/**", (GCompareFunc)strcmp) == NULL);
-  fail_if(g_list_find_custom(c1, "/foo/bar/*", (GCompareFunc)strcmp) == NULL);
-  fail_if(g_list_find_custom(c1, "/foo/bar/**", (GCompareFunc)strcmp) == NULL);
-  fail_if(g_list_find_custom(c1, "/foo/bar/baz", (GCompareFunc)strcmp) == NULL);
-
-  GList* c2 = cometd_channel_matches("/");
-  dump_channel_matches("/", c2);
-
-  fail_if(g_list_find_custom(c2, "/**", (GCompareFunc)strcmp) == NULL);
-  fail_if(g_list_find_custom(c2, "/*", (GCompareFunc)strcmp) == NULL);
-  fail_if(g_list_find_custom(c2, "/", (GCompareFunc)strcmp) == NULL);
-
-  cometd_channel_matches_free(c1);
-  cometd_channel_matches_free(c2);
-}
-END_TEST
-
-START_TEST (test_cometd_channel_is_wildcard)
-{
-  fail_unless(cometd_channel_is_wildcard("/meta/**"));
-  fail_if(cometd_channel_is_wildcard("/meta"));
-}
-END_TEST
-
 START_TEST(test_cometd_should_handshake)
 {
   cometd_conn_set_status(g_instance->conn, COMETD_HANDSHAKE_SUCCESS);
@@ -422,10 +350,10 @@ END_TEST
 
 Suite* make_cometd_unit_suite (void)
 {
-  Suite *s = suite_create ("Cometd");
+  Suite *s = suite_create ("cometd");
 
   /* Unit tests */
-  TCase *tc_unit = tcase_create ("Client::Unit");
+  TCase *tc_unit = tcase_create ("core");
   tcase_add_checked_fixture (tc_unit, setup, teardown);
   tcase_add_test (tc_unit, test_cometd_new);
   tcase_add_test (tc_unit, test_cometd_new_connect_message);
@@ -438,9 +366,6 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_transport);
   tcase_add_test (tc_unit, test_cometd_error);
   tcase_add_test (tc_unit, test_cometd_is_meta_channel);
-  tcase_add_test (tc_unit, test_cometd_conn_status);
-  tcase_add_test (tc_unit, test_cometd_channel_matches);
-  tcase_add_test (tc_unit, test_cometd_channel_is_wildcard);
   tcase_add_test (tc_unit, test_cometd_should_handshake);
   tcase_add_test (tc_unit, test_cometd_get_backoff);
   tcase_add_test (tc_unit, test_cometd_process_message_success);
