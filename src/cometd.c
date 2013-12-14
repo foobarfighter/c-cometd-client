@@ -38,6 +38,7 @@ cometd_new(void)
   config->transports        = NULL;
   cometd_register_transport(config, &COMETD_TRANSPORT_LONG_POLLING);
 
+  h->exts = NULL;
   h->conn = cometd_conn_new();                // connection
   h->loop = cometd_loop_new(gthread, h);      // run loop
   h->inbox = cometd_inbox_new(h->loop);       // inbox
@@ -190,18 +191,13 @@ int cometd_debug_handler(const cometd* h, JsonNode* node){
 void
 cometd_listen(const cometd* h)
 {
+  JsonNode* msg;
+
   while (cometd_conn_is_status(h->conn, COMETD_DISCONNECTED) == FALSE &&
          cometd_conn_is_status(h->conn, COMETD_UNINITIALIZED) == FALSE)
   {
-    JsonNode* msg;
-
     while (msg = cometd_inbox_take(h->inbox))
-    {
-      char* channel = cometd_msg_channel(msg);
-      cometd_fire_listeners(h, channel, msg);
-      json_node_free(msg);
-      free(channel);
-    }
+      cometd_process_msg(h, msg);
   }
 }
 
@@ -401,6 +397,18 @@ free_handshake:
 }
 
 int
+cometd_process_msg(const cometd* h, JsonNode* msg)
+{
+  cometd_ext_fire_incoming(h->exts, h, msg);
+
+  char* channel = cometd_msg_channel(msg);
+  int ret = cometd_fire_listeners(h, channel, msg);
+  free(channel); 
+
+  return ret;
+}
+
+int
 cometd_process_handshake(const cometd* h, JsonNode* msg)
 {
   cometd_conn* conn = h->conn;
@@ -465,12 +473,8 @@ cometd_impl_process_sync(const cometd* h, JsonNode* root)
 
   GList* item;
   for (item = msgs; item; item = g_list_next(item))
-  {
-    JsonNode* msg = item->data;
-    char* channel = cometd_msg_channel(msg);
-    cometd_fire_listeners(h, channel, msg);
-    free(channel);
-  }
+    cometd_process_msg(h, item->data);
+
   g_list_free(msgs);
 
   // TODO: What happens if cometd_fire_listeners blows up?

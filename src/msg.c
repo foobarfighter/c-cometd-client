@@ -57,7 +57,7 @@ cometd_msg_channel(JsonNode* node)
   JsonObject* obj = json_node_get_object(node);
   channel = json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
 
-  return strdup(channel);
+  return channel != NULL ? strdup(channel) : NULL;
 }
 
 /**

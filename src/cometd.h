@@ -170,6 +170,7 @@ void cometd_destroy_transport(gpointer transport);
 
 // processing
 int  cometd_process_handshake(const cometd* h, JsonNode* root);
+int  cometd_process_msg(const cometd* h, JsonNode* msg);
 
 // other
 int               cometd_error(const cometd* h, int code, char* message);
