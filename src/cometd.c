@@ -9,6 +9,7 @@ static void cometd_impl_destroy_sys_s(cometd* h);
 static int cometd_impl_process_sync(const cometd* h, JsonNode* array);
 static int cometd_impl_handshake(const cometd* h, cometd_callback cb);
 static long cometd_impl_compute_backoff(const cometd_config* config, long attempt);
+static JsonNode* cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t);
 
 static gboolean g_types_initialized = FALSE;
 static void cometd_types_init(void)
@@ -353,47 +354,49 @@ cometd_should_handshake(const cometd* h)
 int
 cometd_impl_handshake(const cometd* h, cometd_callback cb)
 {
+  JsonNode* handshake = cometd_new_handshake_message(h);
+  JsonNode* payload   = cometd_impl_send_msg_sync(h, handshake, NULL);
 
-  JsonNode* handshake   = cometd_new_handshake_message(h);
-  gchar*    data        = cometd_json_node2str(handshake);
-  int       error_code  = COMETD_SUCCESS;  
+  int code = COMETD_SUCCESS;
 
-  if (data == NULL){
-    error_code = cometd_error(h, ECOMETD_JSON_SERIALIZE, "could not serialize json");
-    goto free_handshake;
-  }
-  
-  char* resp = http_json_post(h->config->url, data, h->config->request_timeout);
-
-  if (resp == NULL){
-    error_code = cometd_error(h, ECOMETD_HANDSHAKE, "could not handshake");
-    goto free_data;
+  if (!payload)
+  {
+    code = ECOMETD_HANDSHAKE;
+    goto failed_payload;
   }
 
-  JsonNode* payload = cometd_json_str2node(resp);
-
-  if (payload == NULL){
-    error_code = cometd_error(h, ECOMETD_JSON_DESERIALIZE, "could not de-serialize json");
-    goto free_resp;
+  if (!cometd_msg_is_successful(payload) || !cometd_current_transport(h))
+  {
+    code = ECOMETD_HANDSHAKE;
   }
 
-  error_code = cometd_impl_process_sync(h, payload);
-
-  if (!cometd_current_transport(h)){
-    error_code = cometd_error(h, ECOMETD_NO_TRANSPORT, "could not find acceptable transport");
-    goto free_payload;
-  }
-
-free_payload:
   json_node_free(payload);
-free_resp:
-  free(resp);
-free_data:
-  g_free(data);
-free_handshake:
-  json_node_free(handshake);
 
-  return error_code;
+failed_payload:
+  json_node_free(handshake);
+  return code;
+}
+
+JsonNode*
+cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t)
+{
+  JsonNode* payload;
+  int code;
+
+  if (t == NULL)
+    payload = http_post_msg(h, msg);
+  else
+    payload = t->send(h, msg);
+
+  if (!payload)
+    return NULL;
+
+  code = cometd_impl_process_sync(h, payload);
+
+  if (code != COMETD_SUCCESS)
+    cometd_error(h, code, "processing error");
+
+  return payload;
 }
 
 int
@@ -631,21 +634,24 @@ cometd_new_unsubscribe_message(const cometd* h, const char* channel)
 int
 cometd_transport_send(const cometd* h, JsonNode* msg)
 {
-  int code = COMETD_SUCCESS;
-
   cometd_transport* t = cometd_current_transport(h);
   g_return_val_if_fail(t != NULL, ECOMETD_UNKNOWN);
 
-  JsonNode* payload = t->send(h, msg);
+  JsonNode* payload = cometd_impl_send_msg_sync(h, msg, t);
+  int code = COMETD_SUCCESS;
 
-  if (payload != NULL) {
-    code = cometd_msg_is_successful(payload) ?
-              COMETD_SUCCESS : ECOMETD_UNKNOWN;
-
-    cometd_impl_process_sync(h, payload);
-    json_node_free(payload);
+  if (payload == NULL)
+  {
+    code = ECOMETD_UNKNOWN;
+    goto failed_send;
   }
-  
+
+  if (!cometd_msg_is_successful(payload))
+    code = ECOMETD_UNKNOWN;
+
+  json_node_free(payload);
+
+failed_send:
   return code;
 }
 

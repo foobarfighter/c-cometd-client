@@ -94,3 +94,39 @@ cleanup_header_chunk:
 curl_init_error:
   return ret;
 }
+
+JsonNode*
+http_post_msg(const cometd* h, JsonNode* msg)
+{
+  JsonNode* payload = NULL;
+  gchar*    data = cometd_json_node2str(msg);
+  int       code = COMETD_SUCCESS;
+
+  if (data == NULL){
+    code = cometd_error(h, ECOMETD_JSON_SERIALIZE, "could not serialize json");
+    goto failed_serialization;
+  }
+  
+  char* resp = http_json_post(h->config->url, data, h->config->request_timeout);
+
+  if (resp == NULL){
+    // TODO: ECOMETD_HANDSHAKE is no londer correct
+    code = cometd_error(h, ECOMETD_HANDSHAKE, "could not post");
+    goto failed_post;
+  }
+
+  payload = cometd_json_str2node(resp);
+
+  if (payload == NULL){
+    code = cometd_error(h, ECOMETD_JSON_DESERIALIZE, "could not de-serialize json");
+  }
+
+  free(resp);
+
+failed_post:
+  g_free(data);
+
+failed_serialization:
+  return payload;
+}
+

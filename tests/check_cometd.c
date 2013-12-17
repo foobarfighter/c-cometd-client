@@ -6,7 +6,7 @@ static guint test_transport_recv_calls = 0;
 
 static JsonNode* test_transport_send(const cometd* h, JsonNode* node) {
   test_transport_send_calls++;
-  return cometd_json_str2node("[{ \"successful\"; true }]");
+  return cometd_json_str2node("[{ \"successful\": true }]");
 }
 
 static JsonNode* test_transport_recv(const cometd* h) {
@@ -361,6 +361,27 @@ START_TEST (test_cometd_process_msg_fires_incoming_ext)
   gboolean ret = json_node_equal(expected, node, NULL);
 
   fail_unless(ret);
+}
+END_TEST
+
+START_TEST (test_cometd_send_msg_fires_outgoing_ext)
+{
+  // JsonNode* expected = cometd_json_str2node("{ \"foo\": 1}");
+  // gboolean ret = FALSE;
+
+  // cometd_ext* ext = cometd_ext_new();
+  // ext->outgoing = add_foo;
+  // cometd_ext_add(&g_instance->exts, ext);
+
+  // JsonNode* node = cometd_json_str2node("{}");
+
+  // cometd_send_msg(g_instance, NULL, TRUE);
+  // ret = json_node_equal(expected, node, NULL);
+  // fail_unless(ret);
+
+  // cometd_send_msg(g_instance, NULL, FALSE);
+  // ret = json_node_equal(expected, node, NULL);
+  // fail_unless(ret);
 }
 END_TEST
 
