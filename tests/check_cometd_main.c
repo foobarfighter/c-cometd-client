@@ -8,17 +8,16 @@ main (void)
 
   int number_failed;
 
-  SRunner *sr = srunner_create (make_cometd_integration_suite());
-  // SRunner *sr = srunner_create (make_msg_suite());
-  srunner_add_suite (sr, make_cometd_unit_suite());
+  SRunner *sr = srunner_create (make_cometd_unit_suite());
   srunner_add_suite (sr, make_msg_suite());
   srunner_add_suite (sr, make_conn_suite());
   srunner_add_suite (sr, make_transport_suite());
   srunner_add_suite (sr, make_channel_suite());
   srunner_add_suite (sr, make_ext_suite());
-  srunner_add_suite (sr, make_http_integration_suite ());
   srunner_add_suite (sr, make_test_helper_suite ());
   srunner_add_suite (sr, make_cometd_event_suite ());
+  srunner_add_suite (sr, make_http_integration_suite ());
+  srunner_add_suite (sr, make_cometd_integration_suite());
 
   srunner_run_all (sr, CK_NORMAL);
   number_failed = srunner_ntests_failed (sr);

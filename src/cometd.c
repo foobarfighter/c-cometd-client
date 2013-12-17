@@ -383,6 +383,8 @@ cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t)
   JsonNode* payload;
   int code;
 
+  cometd_ext_fire_outgoing(h->exts, h, msg);
+
   if (t == NULL)
     payload = http_post_msg(h, msg);
   else

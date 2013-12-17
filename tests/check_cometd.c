@@ -364,24 +364,22 @@ START_TEST (test_cometd_process_msg_fires_incoming_ext)
 }
 END_TEST
 
-START_TEST (test_cometd_send_msg_fires_outgoing_ext)
+START_TEST (test_cometd_transport_send_fires_outgoing_ext)
 {
-  // JsonNode* expected = cometd_json_str2node("{ \"foo\": 1}");
-  // gboolean ret = FALSE;
+  cometd_conn_set_transport(g_instance->conn, &TEST_TRANSPORT);
 
-  // cometd_ext* ext = cometd_ext_new();
-  // ext->outgoing = add_foo;
-  // cometd_ext_add(&g_instance->exts, ext);
+  JsonNode* expected = cometd_json_str2node("{ \"foo\": 1}");
+  gboolean ret = FALSE;
 
-  // JsonNode* node = cometd_json_str2node("{}");
+  cometd_ext* ext = cometd_ext_new();
+  ext->outgoing = add_foo;
+  cometd_ext_add(&g_instance->exts, ext);
 
-  // cometd_send_msg(g_instance, NULL, TRUE);
-  // ret = json_node_equal(expected, node, NULL);
-  // fail_unless(ret);
+  JsonNode* node = cometd_json_str2node("{}");
 
-  // cometd_send_msg(g_instance, NULL, FALSE);
-  // ret = json_node_equal(expected, node, NULL);
-  // fail_unless(ret);
+  cometd_transport_send(g_instance, node);
+  ret = json_node_equal(expected, node, NULL);
+  fail_unless(ret);
 }
 END_TEST
 
@@ -409,6 +407,7 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_process_message_no_transport);
   tcase_add_test (tc_unit, test_cometd_handshake_backoff);
   tcase_add_test (tc_unit, test_cometd_process_msg_fires_incoming_ext);
+  tcase_add_test (tc_unit, test_cometd_transport_send_fires_outgoing_ext);
   suite_add_tcase (s, tc_unit);
 
   return s;
