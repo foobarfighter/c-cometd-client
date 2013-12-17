@@ -2,14 +2,13 @@
 #include "transport_long_polling.h"
 #include <stdlib.h>
 
-int  cometd_debug_handler (const cometd*, JsonNode*);
 static void cometd_destroy_subscription(gpointer subscription);
 static void cometd_impl_set_sys_s(cometd* h);
 static void cometd_impl_destroy_sys_s(cometd* h);
 static int cometd_impl_process_sync(const cometd* h, JsonNode* array);
 static int cometd_impl_handshake(const cometd* h, cometd_callback cb);
 static long cometd_impl_compute_backoff(const cometd_config* config, long attempt);
-static JsonNode* cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t);
+static int cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t);
 
 static gboolean g_types_initialized = FALSE;
 static void cometd_types_init(void)
@@ -44,17 +43,12 @@ cometd_new(void)
   h->loop = cometd_loop_new(gthread, h);      // run loop
   h->inbox = cometd_inbox_new(h->loop);       // inbox
   h->subscriptions = cometd_listener_new();   // events
+  h->last_error = cometd_error_new();
 
   // set internal handlers
   cometd_impl_set_sys_s(h);
-
-  // error state
-  cometd_error_st* error = malloc(sizeof(cometd_error_st));
-  error->code = COMETD_SUCCESS;
-  error->message = NULL;;
   
   h->config = config;
-  h->last_error = error;
 
   return h;
 }
@@ -100,9 +94,7 @@ cometd_destroy(cometd* h)
   cometd_conn_destroy(h->conn);
   // cometd_loop_destroy(h->loop);
   cometd_inbox_destroy(h->inbox);
-
-  // error state
-  free(h->last_error);
+  cometd_error_destroy(h->last_error);
 
   // handle
   free(h);
@@ -175,13 +167,6 @@ cometd_disconnect(const cometd* h, int wait_for_server)
   } 
   cometd_loop_stop(h->loop);
 }
-
-
-//TODO: Should this be some sort of macro? I suck at C
-int cometd_debug_handler(const cometd* h, JsonNode* node){
-  //printf("returning some data from somewhere: \n");
-}
-
 
 /**
  * Reads JsonNodes that are received by the inbox thread.
@@ -354,34 +339,26 @@ cometd_should_handshake(const cometd* h)
 int
 cometd_impl_handshake(const cometd* h, cometd_callback cb)
 {
-  JsonNode* handshake = cometd_new_handshake_message(h);
-  JsonNode* payload   = cometd_impl_send_msg_sync(h, handshake, NULL);
-
   int code = COMETD_SUCCESS;
+  JsonNode* handshake = cometd_new_handshake_message(h);
 
-  if (!payload)
+  code = cometd_impl_send_msg_sync(h, handshake, NULL);
+
+  if (code == COMETD_SUCCESS && !cometd_current_transport(h))
   {
-    code = ECOMETD_HANDSHAKE;
-    goto failed_payload;
+    code = ECOMETD_NO_TRANSPORT;
   }
 
-  if (!cometd_msg_is_successful(payload) || !cometd_current_transport(h))
-  {
-    code = ECOMETD_HANDSHAKE;
-  }
-
-  json_node_free(payload);
-
-failed_payload:
   json_node_free(handshake);
+
   return code;
 }
 
-JsonNode*
+int
 cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t)
 {
   JsonNode* payload;
-  int code;
+  int code = COMETD_SUCCESS;
 
   cometd_ext_fire_outgoing(h->exts, h, msg);
 
@@ -390,15 +367,25 @@ cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t)
   else
     payload = t->send(h, msg);
 
-  if (!payload)
-    return NULL;
+  if (payload == NULL) {
+    code = cometd_last_error(h)->code;
+    goto failed_send;
+  }
 
   code = cometd_impl_process_sync(h, payload);
 
-  if (code != COMETD_SUCCESS)
-    cometd_error(h, code, "processing error");
+  if (code != COMETD_SUCCESS) {
+    code = cometd_error(h, code, "processing error");
+    goto failed_processing;
+  }
 
-  return payload;
+  if (!cometd_msg_is_successful(payload))
+    code = ECOMETD_UNSUCCESSFUL;
+
+failed_processing:
+  json_node_free(payload);
+failed_send:
+  return code;
 }
 
 int
@@ -450,20 +437,6 @@ GHashTable* cometd_conn_subscriptions(const cometd* h)
   g_assert(h->subscriptions != NULL);
 
   return h->subscriptions;
-}
-
-int
-cometd_error(const cometd* h, int code, char* message)
-{
-  h->last_error->code = code;
-  h->last_error->message = message;
-  return code;
-}
-
-cometd_error_st*
-cometd_last_error(const cometd* h)
-{
-  return h->last_error;
 }
 
 /**
@@ -639,22 +612,7 @@ cometd_transport_send(const cometd* h, JsonNode* msg)
   cometd_transport* t = cometd_current_transport(h);
   g_return_val_if_fail(t != NULL, ECOMETD_UNKNOWN);
 
-  JsonNode* payload = cometd_impl_send_msg_sync(h, msg, t);
-  int code = COMETD_SUCCESS;
-
-  if (payload == NULL)
-  {
-    code = ECOMETD_UNKNOWN;
-    goto failed_send;
-  }
-
-  if (!cometd_msg_is_successful(payload))
-    code = ECOMETD_UNKNOWN;
-
-  json_node_free(payload);
-
-failed_send:
-  return code;
+  return cometd_impl_send_msg_sync(h, msg, t);
 }
 
 int

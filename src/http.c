@@ -110,8 +110,7 @@ http_post_msg(const cometd* h, JsonNode* msg)
   char* resp = http_json_post(h->config->url, data, h->config->request_timeout);
 
   if (resp == NULL){
-    // TODO: ECOMETD_HANDSHAKE is no londer correct
-    code = cometd_error(h, ECOMETD_HANDSHAKE, "could not post");
+    code = cometd_error(h, ECOMETD_SEND, "could not post");
     goto failed_post;
   }
 

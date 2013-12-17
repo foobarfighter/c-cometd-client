@@ -26,17 +26,7 @@
 #define COMETD_CHANNEL_META_UNSUBSCRIBE "/meta/unsubscribe"
 #define COMETD_CHANNEL_META_DISCONNECT  "/meta/disconnect"
 
-// Errors
-#define COMETD_SUCCESS            0
-#define ECOMETD_JSON_SERIALIZE    1
-#define ECOMETD_JSON_DESERIALIZE  2
-#define ECOMETD_HANDSHAKE         3
-#define ECOMETD_INIT_LOOP         4
-#define ECOMETD_UNKNOWN           5
-#define ECOMETD_NO_TRANSPORT      6
-
 // Other
-#define COMETD_MAX_CLIENT_ID_LEN 128
 #define COMETD_MAX_CHANNEL_LEN   512
 #define COMETD_MAX_CHANNEL_PARTS 254
 
@@ -45,12 +35,14 @@
 
 // Forward declaration stuff
 struct _cometd;
+struct _cometd_error_st;
 struct _cometd_conn;
 struct _cometd_advice;
 struct _cometd_subscription;
 struct _cometd_transport;
 struct _cometd_ext;
 typedef struct _cometd cometd;
+typedef struct _cometd_error_st cometd_error_st;
 typedef struct _cometd_conn cometd_conn;
 typedef struct _cometd_advice cometd_advice;
 typedef struct _cometd_subscription cometd_subscription;
@@ -62,6 +54,7 @@ typedef int       (*cometd_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_send_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
 
+#include "error.h"
 #include "conn.h"
 #include "transport.h"
 #include "channel.h"
@@ -92,11 +85,6 @@ typedef struct {
   int    append_message_type_to_url;
   GList* transports; 
 } cometd_config;
-
-typedef struct _cometd_error_st {
-  int   code;
-  char* message;
-} cometd_error_st;
 
 // system handlers
 typedef struct {
@@ -173,9 +161,7 @@ int  cometd_process_handshake(const cometd* h, JsonNode* root);
 int  cometd_process_msg(const cometd* h, JsonNode* msg);
 
 // other
-int               cometd_error(const cometd* h, int code, char* message);
 gboolean          cometd_is_meta_channel(const char* channel);
-cometd_error_st*  cometd_last_error(const cometd* h);
 GHashTable*       cometd_conn_subscriptions(const cometd* h);
 void              cometd_listen(const cometd* h);
 

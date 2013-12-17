@@ -115,7 +115,7 @@ START_TEST (test_cometd_handshake_failed_http)
   cometd_configure(g_instance, COMETDOPT_BACKOFF_INCREMENT, 0);
 
   int code = cometd_handshake(g_instance, NULL);
-  ck_assert_int_eq(ECOMETD_HANDSHAKE, code); 
+  ck_assert_int_eq(ECOMETD_SEND, code); 
 }
 END_TEST
 
@@ -126,7 +126,7 @@ START_TEST (test_cometd_handshake_failed_http_timeout)
   cometd_configure(g_instance, COMETDOPT_REQUEST_TIMEOUT, TEST_LONG_REQUEST_TIMEOUT);
 
   int code = cometd_handshake(g_instance, NULL);
-  ck_assert_int_eq(ECOMETD_HANDSHAKE, code); 
+  ck_assert_int_eq(ECOMETD_SEND, code); 
 }
 END_TEST
 
@@ -137,7 +137,7 @@ START_TEST (test_cometd_handshake_failed_json)
   cometd_configure(g_instance, COMETDOPT_REQUEST_TIMEOUT, 1000);
 
   int code = cometd_handshake(g_instance, NULL);
-  ck_assert_int_eq(ECOMETD_HANDSHAKE, code);
+  ck_assert_int_eq(ECOMETD_JSON_DESERIALIZE, code);
 }
 END_TEST
 

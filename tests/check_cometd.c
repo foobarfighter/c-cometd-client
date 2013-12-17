@@ -202,21 +202,6 @@ START_TEST (test_cometd_meta_subscriptions)
 }
 END_TEST
 
-START_TEST (test_cometd_error)
-{
-  char* message = "hey now";
-  int code = 1234;
-  int ret = cometd_error(g_instance, 1234, message);
-
-  ck_assert_int_eq(code, ret);
-
-  cometd_error_st* error = cometd_last_error(g_instance);
-
-  ck_assert_int_eq(code, error->code);
-  ck_assert_str_eq(message, error->message);
-}
-END_TEST
-
 START_TEST (test_cometd_is_meta_channel)
 {
   fail_unless(cometd_is_meta_channel("/meta/*"));
@@ -399,7 +384,6 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_unsubscribe);
   tcase_add_test (tc_unit, test_cometd_meta_subscriptions);
   tcase_add_test (tc_unit, test_cometd_transport);
-  tcase_add_test (tc_unit, test_cometd_error);
   tcase_add_test (tc_unit, test_cometd_is_meta_channel);
   tcase_add_test (tc_unit, test_cometd_should_handshake);
   tcase_add_test (tc_unit, test_cometd_get_backoff);

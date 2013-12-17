@@ -9,6 +9,7 @@ Suite* make_cometd_unit_suite (void);
 Suite* make_cometd_integration_suite (void);
 Suite* make_http_integration_suite (void);
 Suite* make_msg_suite (void);
+Suite* make_error_suite (void);
 Suite* make_conn_suite (void);
 Suite* make_transport_suite (void);
 Suite* make_channel_suite (void);

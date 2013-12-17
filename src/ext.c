@@ -1,4 +1,5 @@
 #include "ext.h"
+#include <stdlib.h>
 
 static void cometd_impl_ext_fire(GList* exts,
                                  cometd* h,

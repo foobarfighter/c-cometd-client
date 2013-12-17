@@ -9,6 +9,7 @@ main (void)
   int number_failed;
 
   SRunner *sr = srunner_create (make_cometd_unit_suite());
+  srunner_add_suite (sr, make_error_suite());
   srunner_add_suite (sr, make_msg_suite());
   srunner_add_suite (sr, make_conn_suite());
   srunner_add_suite (sr, make_transport_suite());
