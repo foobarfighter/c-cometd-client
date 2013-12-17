@@ -262,7 +262,7 @@ START_TEST (test_cometd_get_backoff)
 }
 END_TEST
 
-START_TEST (test_cometd_process_message_success)
+START_TEST (test_cometd_process_handshake_success)
 {
   cometd_conn* conn = g_instance->conn;
   JsonNode* n = json_from_fixture("handshake_resp_lp");
@@ -282,7 +282,7 @@ START_TEST (test_cometd_process_message_success)
 }
 END_TEST
 
-START_TEST (test_cometd_process_message_no_transport)
+START_TEST (test_cometd_process_handshake_no_transport)
 {
   cometd_conn* conn = g_instance->conn;
   JsonNode* n = json_from_fixture("handshake_resp_unsupported_transports");
@@ -300,6 +300,40 @@ START_TEST (test_cometd_process_message_no_transport)
   fail_if(cometd_conn_advice(conn) == NULL);
 
   json_node_free(n);
+}
+END_TEST
+
+START_TEST (test_cometd_process_connect_success)
+{
+  cometd_conn* conn = g_instance->conn;
+  cometd_conn_set_client_id(conn, "testid");
+  cometd_conn_set_transport(conn, &TEST_TRANSPORT);
+
+  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+
+  JsonNode* msg = cometd_new_connect_message(g_instance);
+  cometd_msg_set_boolean_member(msg, "successful", TRUE);
+
+  int code = cometd_process_connect(g_instance, msg);
+  fail_unless(cometd_conn_is_status(conn, COMETD_CONNECTED));
+  ck_assert_int_eq(COMETD_SUCCESS, code);
+}
+END_TEST
+
+START_TEST (test_cometd_process_connect_unsuccessful)
+{
+  cometd_conn* conn = g_instance->conn;
+  cometd_conn_set_client_id(conn, "testid");
+  cometd_conn_set_transport(conn, &TEST_TRANSPORT);
+
+  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+
+  JsonNode* msg = cometd_new_connect_message(g_instance);
+  cometd_msg_set_boolean_member(msg, "successful", FALSE);
+
+  int code = cometd_process_connect(g_instance, msg);
+  fail_unless(cometd_conn_is_status(conn, COMETD_UNCONNECTED));
+  ck_assert_int_eq(COMETD_SUCCESS, code);
 }
 END_TEST
 
@@ -387,8 +421,9 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_is_meta_channel);
   tcase_add_test (tc_unit, test_cometd_should_handshake);
   tcase_add_test (tc_unit, test_cometd_get_backoff);
-  tcase_add_test (tc_unit, test_cometd_process_message_success);
-  tcase_add_test (tc_unit, test_cometd_process_message_no_transport);
+  tcase_add_test (tc_unit, test_cometd_process_handshake_success);
+  tcase_add_test (tc_unit, test_cometd_process_handshake_no_transport);
+  tcase_add_test (tc_unit, test_cometd_process_connect_success);
   tcase_add_test (tc_unit, test_cometd_handshake_backoff);
   tcase_add_test (tc_unit, test_cometd_process_msg_fires_incoming_ext);
   tcase_add_test (tc_unit, test_cometd_transport_send_fires_outgoing_ext);

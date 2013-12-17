@@ -9,8 +9,8 @@
 gboolean
 cometd_msg_is_successful(JsonNode* node)
 {
-  JsonObject* msg;
-  JsonArray* array;
+  JsonObject* msg = NULL;
+  JsonArray* array = NULL;
   gboolean success = FALSE;
 
   switch (JSON_NODE_TYPE (node))
@@ -19,6 +19,9 @@ cometd_msg_is_successful(JsonNode* node)
       array = json_node_get_array(node);
       msg = json_array_get_length(array) > 0 ?
         json_array_get_object_element(array, 0) : NULL;
+      break;
+    case JSON_NODE_OBJECT:
+      msg = json_node_get_object(node);
       break;
   }
 
@@ -98,6 +101,14 @@ cometd_msg_supported_connection_types(JsonNode* node)
   g_list_free(items);
 
   return types;
+}
+
+void
+cometd_msg_set_boolean_member(JsonNode* node, const char* member, gboolean val)
+{
+  g_assert(JSON_NODE_HOLDS_OBJECT (node));
+  JsonObject* obj = json_node_get_object(node);
+  json_object_set_boolean_member(obj, member, val);
 }
 
 /**

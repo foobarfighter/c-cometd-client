@@ -18,6 +18,7 @@
 #define COMETD_HANDSHAKE_SUCCESS      0x00000002
 #define COMETD_CONNECTED              0x00000004
 #define COMETD_DISCONNECTING          0x00000008
+#define COMETD_UNCONNECTED            0x00000010
 
 // Channels
 #define COMETD_CHANNEL_META_HANDSHAKE   "/meta/handshake"
@@ -158,6 +159,7 @@ void cometd_destroy_transport(gpointer transport);
 
 // processing
 int  cometd_process_handshake(const cometd* h, JsonNode* root);
+int  cometd_process_connect(const cometd* h, JsonNode* root);
 int  cometd_process_msg(const cometd* h, JsonNode* msg);
 
 // other

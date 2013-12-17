@@ -59,8 +59,9 @@ cometd_impl_set_sys_s(cometd* h)
   cometd_sys_s* handlers = &h->sys_s; 
 
   handlers->handshake = cometd_add_listener(h, COMETD_CHANNEL_META_HANDSHAKE,
-                                           cometd_process_handshake);
-  handlers->connect = NULL;
+                                            cometd_process_handshake);
+  handlers->connect   = cometd_add_listener(h, COMETD_CHANNEL_META_CONNECT,
+                                            cometd_process_connect);
   handlers->subscribe = NULL;
   handlers->unsubscribe = NULL;
   handlers->disconnect = NULL;
@@ -71,6 +72,7 @@ cometd_impl_destroy_sys_s(cometd* h)
 {
   cometd_sys_s* handlers = &h->sys_s;
   cometd_remove_listener(h, handlers->handshake);
+  cometd_remove_listener(h, handlers->connect);
 }
 
 static void
@@ -265,7 +267,13 @@ JsonNode*
 cometd_recv(const cometd* h)
 {
   cometd_transport* t = cometd_current_transport(h);
+
   JsonNode* node = t->recv(h);
+  if (node == NULL)
+  {
+    node = cometd_new_connect_message(h);
+    cometd_msg_set_boolean_member(node, COMETD_MSG_SUCCESSFUL_FIELD, FALSE);
+  }
   return node;
 }
 
@@ -424,6 +432,22 @@ cometd_process_handshake(const cometd* h, JsonNode* msg)
   return code;
 }
 
+int
+cometd_process_connect(const cometd* h, JsonNode* msg)
+{
+  cometd_conn* conn = h->conn;
+
+  if (cometd_msg_is_successful(msg))
+    cometd_conn_set_status(conn, COMETD_CONNECTED);
+  else
+  {
+    cometd_conn_clear_status(conn);
+    cometd_conn_set_status(conn, COMETD_UNCONNECTED);
+  }
+
+  return COMETD_SUCCESS;
+}
+
 gboolean
 cometd_is_meta_channel(const char* channel)
 {
@@ -431,7 +455,8 @@ cometd_is_meta_channel(const char* channel)
   return strncmp(channel, "/meta", 5) == 0 ? TRUE : FALSE;
 }
 
-GHashTable* cometd_conn_subscriptions(const cometd* h)
+GHashTable*
+cometd_conn_subscriptions(const cometd* h)
 {
   g_assert(h != NULL);
   g_assert(h->subscriptions != NULL);

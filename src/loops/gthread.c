@@ -31,12 +31,11 @@ cometd_loop_gthread_new(cometd* cometd)
 gpointer
 cometd_loop_gthread_run(gpointer data)
 {
-  JsonNode* node;
-
   const cometd* h = (const cometd*) data;
-  while (!(cometd_conn_is_status(h->conn, COMETD_DISCONNECTED)) &&
-         (node = cometd_recv(h)) != NULL)
+
+  while (!cometd_conn_is_status(h->conn, COMETD_DISCONNECTED))
   {
+    JsonNode* node = cometd_recv(h);
     cometd_inbox_push(h->inbox, node);
     json_node_free(node);
   }
