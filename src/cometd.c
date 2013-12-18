@@ -186,7 +186,7 @@ cometd_listen(const cometd* h)
          cometd_conn_is_status(h->conn, COMETD_UNINITIALIZED) == FALSE)
   {
     while (msg = cometd_inbox_take(h->inbox))
-      cometd_process_msg(h, msg);
+      if (msg != NULL) cometd_process_msg(h, msg);
   }
 }
 
