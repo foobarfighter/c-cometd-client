@@ -14,7 +14,7 @@ static void
 teardown (void)
 {
   // Try to exit clean
-  if (cometd_conn_is_status(g_instance->conn, COMETD_CONNECTED))
+  if (cometd_conn_is_state(g_instance->conn, COMETD_CONNECTED))
   {
     cometd_disconnect(g_instance, 0);
   }
@@ -35,7 +35,10 @@ do_connect (void)
 
   int code = cometd_connect(g_instance);
   ck_assert_int_eq(COMETD_SUCCESS, code);
-  fail_unless(cometd_conn_is_status(g_instance->conn, COMETD_HANDSHAKE_SUCCESS));
+
+  int state = cometd_conn_is_state(g_instance->conn,
+                                   COMETD_HANDSHAKE_SUCCESS | COMETD_CONNECTED);
+  fail_unless(state);
 }
 
 gpointer
@@ -64,8 +67,7 @@ START_TEST (test_cometd_connect_success)
   
   int code = cometd_connect(g_instance);
   ck_assert_int_eq(COMETD_SUCCESS, code);
-  fail_unless(cometd_conn_is_status(g_instance->conn, COMETD_HANDSHAKE_SUCCESS));
-  fail_unless(cometd_conn_is_status(g_instance->conn, COMETD_CONNECTED));
+  fail_unless(cometd_conn_is_state(g_instance->conn, COMETD_CONNECTED));
 }
 END_TEST
 
@@ -82,7 +84,7 @@ START_TEST (test_cometd_connect_fail_init_loop)
   cometd_configure(g_instance, COMETDOPT_LOOP, &fail_loop);
 
   int code = cometd_connect(g_instance);
-  fail_unless(cometd_conn_is_status(g_instance->conn, COMETD_HANDSHAKE_SUCCESS));
+  fail_unless(cometd_conn_is_state(g_instance->conn, COMETD_HANDSHAKE_SUCCESS));
   ck_assert_int_eq(ECOMETD_INIT_LOOP, code);
 }
 END_TEST
@@ -104,7 +106,7 @@ START_TEST (test_cometd_handshake_success)
   if (t != NULL) {
     int ret = strcmp(t->name, "long-polling");
     fail_unless(g_instance->conn->client_id != NULL);
-    fail_unless(cometd_conn_status(g_instance->conn) & COMETD_HANDSHAKE_SUCCESS);
+    fail_unless(cometd_conn_state(g_instance->conn) & COMETD_HANDSHAKE_SUCCESS);
   }
 }
 END_TEST

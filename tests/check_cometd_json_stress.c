@@ -44,7 +44,7 @@ START_TEST (test_cometd_failed_init_loop)
     cometd_configure(h, COMETDOPT_LOOP, &loop);
 
     int code = cometd_connect(h);
-    fail_unless(cometd_conn_is_status(h->conn, COMETD_HANDSHAKE_SUCCESS));
+    fail_unless(cometd_conn_is_state(h->conn, COMETD_HANDSHAKE_SUCCESS));
     ck_assert_int_eq(ECOMETD_INIT_LOOP, code);
 
     cometd_destroy(h);

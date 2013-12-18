@@ -54,11 +54,22 @@ cometd_loop_gthread_run(gpointer data)
     if (cometd_should_retry_recv(h))
       backoff = cometd_get_backoff(h, attempt);
     else
+    {
       backoff = attempt = 0;
+    }
 
     json_node_free(payload);
     json_node_free(connect);
   }
+
+  // If we've bailed from the loop, it's because we gave up
+  // on the COMETD_UNCONNECTED state and we are no longer retrying or we
+  // have intentially disconnected.
+  //
+  // If we gave up retrying, then this ensures that our state gets set correctly
+  // and it should be a signal to the inbox queue to stop waiting.
+  cometd_conn_set_state(conn, COMETD_DISCONNECTED);
+
   return NULL;
 }
 

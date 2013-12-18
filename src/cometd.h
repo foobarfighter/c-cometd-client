@@ -13,12 +13,12 @@
 #define DEFAULT_REQUEST_TIMEOUT       30000
 
 // Connection state
-#define COMETD_UNINITIALIZED          0x00000000
-#define COMETD_DISCONNECTED           0x00000001
-#define COMETD_HANDSHAKE_SUCCESS      0x00000002
-#define COMETD_CONNECTED              0x00000004
-#define COMETD_DISCONNECTING          0x00000008
-#define COMETD_UNCONNECTED            0x00000010
+#define COMETD_UNINITIALIZED          0x01
+#define COMETD_DISCONNECTED           0x02
+#define COMETD_HANDSHAKE_SUCCESS      0x04
+#define COMETD_CONNECTED              0x08
+#define COMETD_DISCONNECTING          0x10
+#define COMETD_UNCONNECTED            0x20
 
 // Channels
 #define COMETD_CHANNEL_META_HANDSHAKE   "/meta/handshake"

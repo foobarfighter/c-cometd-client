@@ -29,11 +29,9 @@ void           cometd_conn_destroy(cometd_conn* conn);
 void           cometd_conn_set_transport(cometd_conn* conn, cometd_transport* t);
 const char*    cometd_conn_client_id(const cometd_conn* conn);
 void           cometd_conn_set_client_id(cometd_conn* conn, const char* id);
-long           cometd_conn_status(const cometd_conn* conn);
-void           cometd_conn_set_status(cometd_conn* conn, long status);
-long           cometd_conn_is_status(const cometd_conn* conn, long status);
-void           cometd_conn_clear_status(cometd_conn* conn);
-
+int            cometd_conn_state(const cometd_conn* conn);
+void           cometd_conn_set_state(cometd_conn* conn, int status);
+int            cometd_conn_is_state(const cometd_conn* conn, int status);
 
 cometd_advice* cometd_advice_new(void);
 void           cometd_advice_destroy(cometd_advice* advice);

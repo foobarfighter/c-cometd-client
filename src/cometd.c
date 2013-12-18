@@ -153,7 +153,7 @@ cometd_connect(const cometd* h)
     goto error;
   }
 
-  cometd_conn_set_status(h->conn, COMETD_CONNECTED);
+  cometd_conn_set_state(h->conn, COMETD_CONNECTED);
 
 error:
   return error_code;
@@ -165,8 +165,7 @@ cometd_disconnect(const cometd* h, int wait_for_server)
   if (wait_for_server){
     // TODO
   } else {
-    cometd_conn_clear_status(h->conn);
-    cometd_conn_set_status(h->conn, COMETD_DISCONNECTED);
+    cometd_conn_set_state(h->conn, COMETD_DISCONNECTED);
   } 
   cometd_loop_stop(h->loop);
 }
@@ -182,8 +181,13 @@ cometd_listen(const cometd* h)
 {
   JsonNode* msg;
 
-  while (cometd_conn_is_status(h->conn, COMETD_DISCONNECTED) == FALSE &&
-         cometd_conn_is_status(h->conn, COMETD_UNINITIALIZED) == FALSE)
+  // TODO: COMETD_UNINITIALIZED is a useless state
+  const long stop = COMETD_DISCONNECTED | COMETD_DISCONNECTING |
+                    COMETD_UNINITIALIZED;
+
+  
+  // TODO: Add tests that demostrate that cometd_listen actually returns
+  while (!cometd_conn_is_state(h->conn, stop))
   {
     while (msg = cometd_inbox_take(h->inbox))
       if (msg != NULL) cometd_process_msg(h, msg);
@@ -289,8 +293,8 @@ cometd_should_recv(const cometd* h)
 
   cometd_conn* conn = h->conn;
 
-  return (cometd_conn_is_status(conn, COMETD_CONNECTED) ||
-          cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
+  return (cometd_conn_is_state(conn, COMETD_CONNECTED) ||
+          cometd_conn_is_state(conn, COMETD_HANDSHAKE_SUCCESS));
 }
 
 gboolean
@@ -302,7 +306,7 @@ cometd_should_retry_recv(const cometd* h)
   cometd_conn* conn = h->conn;
   const cometd_advice* advice = cometd_conn_advice(conn);
 
-  return cometd_conn_is_status(conn, COMETD_UNCONNECTED) &&
+  return cometd_conn_is_state(conn, COMETD_UNCONNECTED) &&
          (advice != NULL && cometd_advice_is_retry(advice));
 }
 
@@ -364,11 +368,8 @@ cometd_should_handshake(const cometd* h)
 {
   cometd_conn* conn = h->conn;
   
-  if (cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS) ||
-      cometd_conn_is_status(conn, COMETD_CONNECTED))
-  {
+  if (cometd_conn_is_state(conn, COMETD_HANDSHAKE_SUCCESS | COMETD_CONNECTED))
     return FALSE;
-  }
 
   return conn->advice == NULL || cometd_advice_is_handshake(conn->advice);
 }
@@ -451,7 +452,7 @@ cometd_process_handshake(const cometd* h, JsonNode* msg)
     gchar* client_id = cometd_msg_client_id(msg);
     cometd_conn_set_transport(conn, t);
     cometd_conn_set_client_id(conn, client_id);
-    cometd_conn_set_status(conn, COMETD_HANDSHAKE_SUCCESS);
+    cometd_conn_set_state(conn, COMETD_HANDSHAKE_SUCCESS);
     g_free(client_id);
   } else {
     code = ECOMETD_NO_TRANSPORT;
@@ -468,15 +469,14 @@ cometd_process_connect(const cometd* h, JsonNode* msg)
 
   // If we are trying to disconnect cleanly then we should not
   // reset the connected/connecting status on response.
-  if (cometd_conn_is_status(conn, COMETD_DISCONNECTING | COMETD_DISCONNECTED))
+  if (cometd_conn_is_state(conn, COMETD_DISCONNECTING | COMETD_DISCONNECTED))
     return COMETD_SUCCESS;
 
   if (cometd_msg_is_successful(msg))
-    cometd_conn_set_status(conn, COMETD_CONNECTED);
+    cometd_conn_set_state(conn, COMETD_CONNECTED);
   else
   {
-    cometd_conn_clear_status(conn);
-    cometd_conn_set_status(conn, COMETD_UNCONNECTED);
+    cometd_conn_set_state(conn, COMETD_UNCONNECTED);
   }
 
   return COMETD_SUCCESS;

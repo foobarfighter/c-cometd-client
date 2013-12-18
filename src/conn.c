@@ -116,35 +116,23 @@ cometd_conn_set_client_id(cometd_conn* conn, const char* id)
 }
 
 void
-cometd_conn_set_status(cometd_conn* conn, long status)
+cometd_conn_set_state(cometd_conn* conn, int status)
 {
   g_assert(conn != NULL);
 
-  conn->state = cometd_conn_status(conn) | status;
+  conn->state = status;
 }
 
-long
-cometd_conn_status(const cometd_conn* conn)
+int
+cometd_conn_state(const cometd_conn* conn)
 {
-  g_return_val_if_fail(conn != NULL, COMETD_UNINITIALIZED);
+  g_return_val_if_fail(conn != NULL, COMETD_DISCONNECTED);
 
   return conn->state;
 }
 
-long
-cometd_conn_is_status(const cometd_conn* conn, long status)
+int
+cometd_conn_is_state(const cometd_conn* conn, int status)
 {
-  long actual = cometd_conn_status(conn);
-  if (status == COMETD_UNINITIALIZED)
-    return actual == COMETD_UNINITIALIZED;
-
-  return actual & status;
-}
-
-void
-cometd_conn_clear_status(cometd_conn* conn)
-{
-  g_assert(conn != NULL);
-
-  conn->state = COMETD_UNINITIALIZED;
+  return cometd_conn_state(conn) & status;
 }

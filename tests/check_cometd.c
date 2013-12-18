@@ -62,7 +62,7 @@ END_TEST
 
 START_TEST (test_cometd_new)
 {
-  fail_unless(cometd_conn_is_status(g_instance->conn, COMETD_UNINITIALIZED));
+  fail_unless(cometd_conn_is_state(g_instance->conn, COMETD_UNINITIALIZED));
   ck_assert_int_eq(COMETD_SUCCESS, g_instance->last_error->code);
 
   char* actual_url = "http://example.com/cometd/";
@@ -197,14 +197,13 @@ END_TEST
 
 START_TEST(test_cometd_should_handshake)
 {
-  cometd_conn_set_status(g_instance->conn, COMETD_HANDSHAKE_SUCCESS);
+  cometd_conn_set_state(g_instance->conn, COMETD_HANDSHAKE_SUCCESS);
   fail_if(cometd_should_handshake(g_instance));
 
-  cometd_conn_set_status(g_instance->conn, COMETD_CONNECTED);
+  cometd_conn_set_state(g_instance->conn, COMETD_CONNECTED);
   fail_if(cometd_should_handshake(g_instance));
 
-  cometd_conn_clear_status(g_instance->conn);
-
+  cometd_conn_set_state(g_instance->conn, COMETD_UNCONNECTED);
   cometd_advice* advice = cometd_advice_new();
   advice->reconnect = COMETD_RECONNECT_HANDSHAKE;
   cometd_conn_take_advice(g_instance->conn, advice);
@@ -251,14 +250,14 @@ START_TEST (test_cometd_process_handshake_success)
   cometd_conn* conn = g_instance->conn;
   JsonNode* n = json_from_fixture("handshake_resp_lp");
 
-  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+  fail_unless(cometd_conn_is_state(conn, COMETD_UNINITIALIZED));
   fail_unless(cometd_current_transport(g_instance) == NULL);
   fail_unless(cometd_conn_client_id(conn) == NULL);
 
   int code = cometd_process_handshake(g_instance, n);
 
   fail_unless(code == COMETD_SUCCESS);
-  fail_unless(cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
+  fail_unless(cometd_conn_is_state(conn, COMETD_HANDSHAKE_SUCCESS));
   fail_if(cometd_current_transport(g_instance) == NULL);
   fail_if(cometd_conn_client_id(conn) == NULL);
 
@@ -271,14 +270,14 @@ START_TEST (test_cometd_process_handshake_no_transport)
   cometd_conn* conn = g_instance->conn;
   JsonNode* n = json_from_fixture("handshake_resp_unsupported_transports");
 
-  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+  fail_unless(cometd_conn_is_state(conn, COMETD_UNINITIALIZED));
   fail_unless(cometd_current_transport(g_instance) == NULL);
   fail_unless(cometd_conn_client_id(conn) == NULL);
 
   int code = cometd_process_handshake(g_instance, n);
 
   fail_unless(code == ECOMETD_NO_TRANSPORT);
-  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+  fail_unless(cometd_conn_is_state(conn, COMETD_UNINITIALIZED));
   fail_unless(cometd_current_transport(g_instance) == NULL);
   fail_unless(cometd_conn_client_id(conn) == NULL);
   fail_if(cometd_conn_advice(conn) == NULL);
@@ -293,13 +292,13 @@ START_TEST (test_cometd_process_connect_success)
   cometd_conn_set_client_id(conn, "testid");
   cometd_conn_set_transport(conn, &TEST_TRANSPORT);
 
-  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+  fail_unless(cometd_conn_is_state(conn, COMETD_UNINITIALIZED));
 
   JsonNode* msg = cometd_msg_connect_new(g_instance);
   cometd_msg_set_boolean_member(msg, "successful", TRUE);
 
   int code = cometd_process_connect(g_instance, msg);
-  fail_unless(cometd_conn_is_status(conn, COMETD_CONNECTED));
+  fail_unless(cometd_conn_is_state(conn, COMETD_CONNECTED));
   ck_assert_int_eq(COMETD_SUCCESS, code);
 }
 END_TEST
@@ -310,13 +309,13 @@ START_TEST (test_cometd_process_connect_unsuccessful)
   cometd_conn_set_client_id(conn, "testid");
   cometd_conn_set_transport(conn, &TEST_TRANSPORT);
 
-  fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
+  fail_unless(cometd_conn_is_state(conn, COMETD_UNINITIALIZED));
 
   JsonNode* msg = cometd_msg_connect_new(g_instance);
   cometd_msg_set_boolean_member(msg, "successful", FALSE);
 
   int code = cometd_process_connect(g_instance, msg);
-  fail_unless(cometd_conn_is_status(conn, COMETD_UNCONNECTED));
+  fail_unless(cometd_conn_is_state(conn, COMETD_UNCONNECTED));
   ck_assert_int_eq(COMETD_SUCCESS, code);
 }
 END_TEST
@@ -390,16 +389,13 @@ START_TEST (test_cometd_should_recv)
 {
   cometd_conn* conn = g_instance->conn;
   
-  cometd_conn_clear_status(conn);
-  cometd_conn_set_status(conn, COMETD_HANDSHAKE_SUCCESS);
+  cometd_conn_set_state(conn, COMETD_HANDSHAKE_SUCCESS);
   fail_unless(cometd_should_recv(g_instance));
 
-  cometd_conn_clear_status(conn);
-  cometd_conn_set_status(conn, COMETD_CONNECTED);
+  cometd_conn_set_state(conn, COMETD_CONNECTED);
   fail_unless(cometd_should_recv(g_instance));
 
-  cometd_conn_clear_status(conn);
-  cometd_conn_set_status(conn, COMETD_DISCONNECTED);
+  cometd_conn_set_state(conn, COMETD_DISCONNECTED);
   fail_if(cometd_should_recv(g_instance));
 }
 END_TEST
@@ -414,22 +410,18 @@ START_TEST (test_cometd_should_retry_recv)
 
   cometd_conn* conn = g_instance->conn;
 
-  cometd_conn_clear_status(conn);
-  cometd_conn_set_status(conn, COMETD_DISCONNECTED);
+  cometd_conn_set_state(conn, COMETD_DISCONNECTED);
   fail_if(cometd_should_retry_recv(g_instance));
 
-  cometd_conn_clear_status(conn);
-  cometd_conn_set_status(conn, COMETD_UNCONNECTED);
+  cometd_conn_set_state(conn, COMETD_UNCONNECTED);
   cometd_conn_take_advice(conn, handshake_advice);
   fail_if(cometd_should_retry_recv(g_instance));
 
-  cometd_conn_clear_status(conn);
-  cometd_conn_set_status(conn, COMETD_UNCONNECTED);
+  cometd_conn_set_state(conn, COMETD_UNCONNECTED);
   cometd_conn_take_advice(conn, NULL);
   fail_if(cometd_should_retry_recv(g_instance));
 
-  cometd_conn_clear_status(conn);
-  cometd_conn_set_status(conn, COMETD_UNCONNECTED);
+  cometd_conn_set_state(conn, COMETD_UNCONNECTED);
   cometd_conn_take_advice(conn, retry_advice);
   fail_unless(cometd_should_retry_recv(g_instance));
 }
