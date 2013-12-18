@@ -151,3 +151,73 @@ cometd_msg_advice(JsonNode* node)
 
   return advice;
 }
+
+JsonNode*
+cometd_msg_extract_connect(JsonNode* payload)
+{
+  JsonNode* connect = NULL;
+  JsonArray* arr = json_node_get_array(payload);
+  GList* msgs = json_array_get_elements(arr);
+
+  gint i;
+  gint index = -1;
+
+  GList* item;
+
+  for (i = 0, item = msgs; item; item = g_list_next(item), ++i)
+  {
+    JsonNode* msg = item->data;
+    char* channel = cometd_msg_channel(msg);
+
+    if (strcmp(COMETD_CHANNEL_META_CONNECT, channel) == 0)
+      index = i;
+
+    free(channel);
+  }
+
+  if (index > -1)
+  {
+    connect = json_array_dup_element(arr, index);
+    json_array_remove_element(arr, index);
+  }
+
+  g_list_free(msgs);
+
+  return connect;
+}
+
+JsonNode*
+cometd_msg_wrap(JsonNode* msg)
+{
+  JsonNode* payload = json_node_new(JSON_NODE_ARRAY);
+  JsonArray* arr = json_array_new();
+  json_array_add_element(arr, msg);
+  json_node_take_array(payload, arr);
+  return payload;
+}
+
+JsonNode*
+cometd_msg_connect_new(const cometd* h){
+  JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
+  JsonObject* obj  = json_object_new();
+
+  gint64 seed = ++(h->conn->msg_id_seed);
+  char*  connection_type = cometd_current_transport(h)->name;
+
+  json_object_set_int_member   (obj, COMETD_MSG_ID_FIELD,      seed);
+  json_object_set_string_member(obj, COMETD_MSG_CHANNEL_FIELD, COMETD_CHANNEL_META_CONNECT);
+  json_object_set_string_member(obj, "connectionType",         connection_type);
+  json_object_set_string_member(obj, "clientId",               cometd_conn_client_id(h->conn));
+
+  json_node_take_object(root, obj);
+
+  return root;
+}
+
+JsonNode*
+cometd_msg_bad_connect_new(const cometd* h)
+{
+  JsonNode* msg = cometd_msg_connect_new(h);
+  cometd_msg_set_boolean_member(msg, COMETD_MSG_SUCCESSFUL_FIELD, FALSE);
+  return msg;
+}

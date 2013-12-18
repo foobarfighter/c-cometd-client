@@ -120,7 +120,6 @@ void    cometd_destroy   (cometd* h);
 #define cometd_configure(h, opt, value) cometd_configure(h, opt, value)
 
 // message creation / serialization
-JsonNode* cometd_new_connect_message  (const cometd* h);
 JsonNode* cometd_new_handshake_message(const cometd* h);
 JsonNode* cometd_new_subscribe_message(const cometd* h, const char* c);
 JsonNode* cometd_new_unsubscribe_message(const cometd* h, const char* c);
@@ -131,6 +130,8 @@ JsonNode* cometd_new_publish_message(const cometd* h,
 // protocol
 int         cometd_handshake    (const cometd* h, cometd_callback cb);
 gboolean    cometd_should_handshake (const cometd* h);
+gboolean    cometd_should_recv  (const cometd* h);
+gboolean    cometd_should_retry_recv (const cometd* h);
 long        cometd_get_backoff  (const cometd* h, long attempt);
 int         cometd_connect      (const cometd* h);
 JsonNode*   cometd_recv         (const cometd* h);

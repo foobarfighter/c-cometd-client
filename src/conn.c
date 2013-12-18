@@ -76,6 +76,14 @@ cometd_advice_is_none(const cometd_advice* advice)
   return advice->reconnect == COMETD_RECONNECT_NONE;
 }
 
+gboolean
+cometd_advice_is_retry(const cometd_advice* advice)
+{
+  g_assert(advice != NULL);
+
+  return advice->reconnect == COMETD_RECONNECT_RETRY;
+}
+
 /**
  * Sets the current transport being used for the connection.
  */

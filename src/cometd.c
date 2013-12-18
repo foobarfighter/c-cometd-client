@@ -165,6 +165,7 @@ cometd_disconnect(const cometd* h, int wait_for_server)
   if (wait_for_server){
     // TODO
   } else {
+    cometd_conn_clear_status(h->conn);
     cometd_conn_set_status(h->conn, COMETD_DISCONNECTED);
   } 
   cometd_loop_stop(h->loop);
@@ -266,15 +267,43 @@ cometd_unsubscribe(const cometd* h, cometd_subscription* s)
 JsonNode*
 cometd_recv(const cometd* h)
 {
-  cometd_transport* t = cometd_current_transport(h);
+  JsonNode *payload = NULL;
+  cometd_transport* transport = NULL;
+  
+  transport = cometd_current_transport(h);
+  g_assert(transport != NULL);
 
-  JsonNode* node = t->recv(h);
-  if (node == NULL)
-  {
-    node = cometd_new_connect_message(h);
-    cometd_msg_set_boolean_member(node, COMETD_MSG_SUCCESSFUL_FIELD, FALSE);
-  }
-  return node;
+  payload = transport->recv(h);
+
+  if (payload == NULL)
+    payload = cometd_msg_wrap(cometd_msg_bad_connect_new(h));
+
+  return payload;
+}
+
+gboolean
+cometd_should_recv(const cometd* h)
+{
+  g_return_val_if_fail(h, FALSE);
+  g_return_val_if_fail(h->conn, FALSE);
+
+  cometd_conn* conn = h->conn;
+
+  return (cometd_conn_is_status(conn, COMETD_CONNECTED) ||
+          cometd_conn_is_status(conn, COMETD_HANDSHAKE_SUCCESS));
+}
+
+gboolean
+cometd_should_retry_recv(const cometd* h)
+{
+  g_return_val_if_fail(h, FALSE);
+  g_return_val_if_fail(h->conn, FALSE);
+
+  cometd_conn* conn = h->conn;
+  const cometd_advice* advice = cometd_conn_advice(conn);
+
+  return cometd_conn_is_status(conn, COMETD_UNCONNECTED) &&
+         (advice != NULL && cometd_advice_is_retry(advice));
 }
 
 int
@@ -437,6 +466,11 @@ cometd_process_connect(const cometd* h, JsonNode* msg)
 {
   cometd_conn* conn = h->conn;
 
+  // If we are trying to disconnect cleanly then we should not
+  // reset the connected/connecting status on response.
+  if (cometd_conn_is_status(conn, COMETD_DISCONNECTING | COMETD_DISCONNECTED))
+    return COMETD_SUCCESS;
+
   if (cometd_msg_is_successful(msg))
     cometd_conn_set_status(conn, COMETD_CONNECTED);
   else
@@ -490,24 +524,6 @@ cometd_current_transport(const cometd* h){
   g_return_val_if_fail(h->conn != NULL, NULL);
   
   return h->conn->transport;
-}
-
-JsonNode*
-cometd_new_connect_message(const cometd* h){
-  JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
-  JsonObject* obj  = json_object_new();
-
-  gint64 seed = ++(h->conn->msg_id_seed);
-  char*  connection_type = cometd_current_transport(h)->name;
-
-  json_object_set_int_member   (obj, COMETD_MSG_ID_FIELD,      seed);
-  json_object_set_string_member(obj, COMETD_MSG_CHANNEL_FIELD, COMETD_CHANNEL_META_CONNECT);
-  json_object_set_string_member(obj, "connectionType",         connection_type);
-  json_object_set_string_member(obj, "clientId",               cometd_conn_client_id(h->conn));
-
-  json_node_take_object(root, obj);
-
-  return root;
 }
 
 JsonNode*

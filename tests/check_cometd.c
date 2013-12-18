@@ -76,22 +76,6 @@ START_TEST (test_cometd_new)
 }
 END_TEST
 
-START_TEST (test_cometd_new_connect_message)
-{
-  cometd_conn_set_client_id(g_instance->conn, "testid");
-  cometd_register_transport(g_instance->config, &TEST_TRANSPORT);
-  g_instance->conn->transport = &TEST_TRANSPORT;
-
-  JsonNode* msg   = cometd_new_connect_message(g_instance);
-  JsonObject* obj = json_node_get_object(msg);
-
-  const gchar* channel = json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
-  fail_unless(strcmp(channel, COMETD_CHANNEL_META_CONNECT) == 0);
-
-  json_node_free(msg);
-}
-END_TEST
-
 START_TEST (test_cometd_new_handshake_message){
   long seed = g_instance->conn->msg_id_seed;
 
@@ -311,7 +295,7 @@ START_TEST (test_cometd_process_connect_success)
 
   fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
 
-  JsonNode* msg = cometd_new_connect_message(g_instance);
+  JsonNode* msg = cometd_msg_connect_new(g_instance);
   cometd_msg_set_boolean_member(msg, "successful", TRUE);
 
   int code = cometd_process_connect(g_instance, msg);
@@ -328,7 +312,7 @@ START_TEST (test_cometd_process_connect_unsuccessful)
 
   fail_unless(cometd_conn_is_status(conn, COMETD_UNINITIALIZED));
 
-  JsonNode* msg = cometd_new_connect_message(g_instance);
+  JsonNode* msg = cometd_msg_connect_new(g_instance);
   cometd_msg_set_boolean_member(msg, "successful", FALSE);
 
   int code = cometd_process_connect(g_instance, msg);
@@ -402,6 +386,55 @@ START_TEST (test_cometd_transport_send_fires_outgoing_ext)
 }
 END_TEST
 
+START_TEST (test_cometd_should_recv)
+{
+  cometd_conn* conn = g_instance->conn;
+  
+  cometd_conn_clear_status(conn);
+  cometd_conn_set_status(conn, COMETD_HANDSHAKE_SUCCESS);
+  fail_unless(cometd_should_recv(g_instance));
+
+  cometd_conn_clear_status(conn);
+  cometd_conn_set_status(conn, COMETD_CONNECTED);
+  fail_unless(cometd_should_recv(g_instance));
+
+  cometd_conn_clear_status(conn);
+  cometd_conn_set_status(conn, COMETD_DISCONNECTED);
+  fail_if(cometd_should_recv(g_instance));
+}
+END_TEST
+
+START_TEST (test_cometd_should_retry_recv)
+{
+  cometd_advice* handshake_advice = cometd_advice_new();
+  handshake_advice->reconnect = COMETD_RECONNECT_HANDSHAKE;
+
+  cometd_advice* retry_advice = cometd_advice_new();
+  retry_advice->reconnect = COMETD_RECONNECT_RETRY;
+
+  cometd_conn* conn = g_instance->conn;
+
+  cometd_conn_clear_status(conn);
+  cometd_conn_set_status(conn, COMETD_DISCONNECTED);
+  fail_if(cometd_should_retry_recv(g_instance));
+
+  cometd_conn_clear_status(conn);
+  cometd_conn_set_status(conn, COMETD_UNCONNECTED);
+  cometd_conn_take_advice(conn, handshake_advice);
+  fail_if(cometd_should_retry_recv(g_instance));
+
+  cometd_conn_clear_status(conn);
+  cometd_conn_set_status(conn, COMETD_UNCONNECTED);
+  cometd_conn_take_advice(conn, NULL);
+  fail_if(cometd_should_retry_recv(g_instance));
+
+  cometd_conn_clear_status(conn);
+  cometd_conn_set_status(conn, COMETD_UNCONNECTED);
+  cometd_conn_take_advice(conn, retry_advice);
+  fail_unless(cometd_should_retry_recv(g_instance));
+}
+END_TEST
+
 Suite* make_cometd_unit_suite (void)
 {
   Suite *s = suite_create ("cometd");
@@ -410,7 +443,6 @@ Suite* make_cometd_unit_suite (void)
   TCase *tc_unit = tcase_create ("core");
   tcase_add_checked_fixture (tc_unit, setup, teardown);
   tcase_add_test (tc_unit, test_cometd_new);
-  tcase_add_test (tc_unit, test_cometd_new_connect_message);
   tcase_add_test (tc_unit, test_cometd_new_handshake_message);
   tcase_add_test (tc_unit, test_cometd_new_subscribe_message);
   tcase_add_test (tc_unit, test_cometd_new_unsubscribe_message);
@@ -427,6 +459,8 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_handshake_backoff);
   tcase_add_test (tc_unit, test_cometd_process_msg_fires_incoming_ext);
   tcase_add_test (tc_unit, test_cometd_transport_send_fires_outgoing_ext);
+  tcase_add_test (tc_unit, test_cometd_should_recv);
+  tcase_add_test (tc_unit, test_cometd_should_retry_recv);
   suite_add_tcase (s, tc_unit);
 
   return s;

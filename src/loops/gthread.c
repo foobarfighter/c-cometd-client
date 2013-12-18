@@ -33,11 +33,31 @@ cometd_loop_gthread_run(gpointer data)
 {
   const cometd* h = (const cometd*) data;
 
-  while (!cometd_conn_is_status(h->conn, COMETD_DISCONNECTED))
+  cometd_conn* conn = h->conn;
+  cometd_loop* loop = h->loop;
+
+  JsonNode *connect = NULL, *payload = NULL;
+
+  long backoff = 0;
+
+  guint attempt;
+  for (attempt = 1; cometd_should_recv(h); ++attempt)
   {
-    JsonNode* node = cometd_recv(h);
-    cometd_inbox_push(h->inbox, node);
-    json_node_free(node);
+    cometd_loop_wait(loop, backoff);
+
+    payload = cometd_recv(h);
+    connect = cometd_msg_extract_connect(payload);
+
+    cometd_inbox_push(h->inbox, payload);
+    cometd_process_msg(h, connect);
+
+    if (cometd_should_retry_recv(h))
+      backoff = cometd_get_backoff(h, attempt);
+    else
+      backoff = attempt = 0;
+
+    json_node_free(payload);
+    json_node_free(connect);
   }
   return NULL;
 }
@@ -46,8 +66,8 @@ unsigned int
 cometd_loop_gthread_start(cometd_loop* loop)
 {
   INTERNAL(loop)->thread = g_thread_new("cometd_loop_gthread_run",
-                                                cometd_loop_gthread_run,
-                                                loop->cometd);
+                                        cometd_loop_gthread_run,
+                                        loop->cometd);
 	return 0;
 }
 

@@ -1,5 +1,11 @@
 #include "check_cometd.h"
 
+static cometd_transport TEST_TRANSPORT = {
+  "test-transport",
+   NULL,
+   NULL
+};
+
 static void
 assert_bool_node_func(char *str,
                       gboolean (*cb)(JsonNode* n),
@@ -114,22 +120,81 @@ START_TEST (test_cometd_msg_advice_null)
 }
 END_TEST
 
+START_TEST (test_cometd_msg_extract_connect)
+{
+  JsonNode* payload = json_from_fixture("connect_payload");
+  JsonNode* connect = cometd_msg_extract_connect(payload);
+  
+  JsonNode* expected_connect = cometd_json_str2node(" \
+    { \"channel\": \"/meta/connect\",       \
+      \"clientId\": \"Un1q31d3nt1f13r\",    \
+      \"connectionType\": \"long-polling\", \
+      \"successful\": true }");
+  fail_unless(json_node_equal(expected_connect, connect, NULL));
+
+  JsonNode* expected_payload = cometd_json_str2node("[{ \"channel\": \"/foo/bar\"}]");
+  fail_unless(json_node_equal(expected_payload, payload, NULL));
+
+  json_node_free(payload);
+}
+END_TEST
+
+START_TEST (test_cometd_msg_connect_new)
+{
+  cometd* h = cometd_new();
+  cometd_conn* conn = h->conn;
+
+  cometd_conn_set_client_id(conn, "testid");
+  cometd_conn_set_transport(conn, &TEST_TRANSPORT);
+
+  JsonNode* msg   = cometd_msg_connect_new(h);
+  JsonObject* obj = json_node_get_object(msg);
+
+  const gchar* channel = json_object_get_string_member(obj, COMETD_MSG_CHANNEL_FIELD);
+  fail_unless(strcmp(channel, COMETD_CHANNEL_META_CONNECT) == 0);
+
+  json_node_free(msg);
+}
+END_TEST
+
+START_TEST (test_cometd_msg_bad_connect_new)
+{
+  cometd* h = cometd_new();
+  cometd_conn* conn = h->conn;
+
+  cometd_conn_set_client_id(conn, "testid");
+  cometd_conn_set_transport(conn, &TEST_TRANSPORT);
+
+  JsonNode* msg   = cometd_msg_bad_connect_new(h);
+  JsonObject* obj = json_node_get_object(msg);
+
+  const gboolean successful = json_object_get_boolean_member(obj, COMETD_MSG_SUCCESSFUL_FIELD);
+  fail_if(successful);
+  json_node_free(msg);
+}
+END_TEST
+
 Suite* make_msg_suite (void)
 {
-  Suite *s = suite_create ("cometd");
+  Suite *s = suite_create ("msg");
 
-  TCase *tc_unit = tcase_create ("msg");
+  TCase *msg_util = tcase_create ("util");
   
-  tcase_add_test (tc_unit, test_cometd_msg_is_successful);
-  tcase_add_test (tc_unit, test_cometd_msg_has_data);
-  tcase_add_test (tc_unit, test_cometd_msg_client_id);
-  tcase_add_test (tc_unit, test_cometd_msg_supported_connection_types);
-  tcase_add_test (tc_unit, test_cometd_msg_advice_none);
-  tcase_add_test (tc_unit, test_cometd_msg_advice_handshake);
-  tcase_add_test (tc_unit, test_cometd_msg_advice_retry);
-  tcase_add_test (tc_unit, test_cometd_msg_advice_null);
+  tcase_add_test (msg_util, test_cometd_msg_is_successful);
+  tcase_add_test (msg_util, test_cometd_msg_has_data);
+  tcase_add_test (msg_util, test_cometd_msg_client_id);
+  tcase_add_test (msg_util, test_cometd_msg_supported_connection_types);
+  tcase_add_test (msg_util, test_cometd_msg_advice_none);
+  tcase_add_test (msg_util, test_cometd_msg_advice_handshake);
+  tcase_add_test (msg_util, test_cometd_msg_advice_retry);
+  tcase_add_test (msg_util, test_cometd_msg_advice_null);
+  tcase_add_test (msg_util, test_cometd_msg_extract_connect);
+  suite_add_tcase (s, msg_util);
 
-  suite_add_tcase (s, tc_unit);
+  TCase *msg_new = tcase_create ("new");
+  tcase_add_test (msg_new, test_cometd_msg_connect_new);
+  tcase_add_test (msg_new, test_cometd_msg_bad_connect_new);
+  suite_add_tcase (s, msg_new);
 
   return s;
 }

@@ -18,6 +18,7 @@ int main(void)
 {
   cometd* cometd = cometd_new();
   cometd_configure(cometd, COMETDOPT_URL, "http://localhost:8089/cometd");
+  cometd_configure(cometd, COMETDOPT_MAX_BACKOFF, 1000);
 
   cometd_subscribe(cometd, "/meta/**", meta_handler);
   cometd_connect(cometd);

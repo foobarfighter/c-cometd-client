@@ -1,0 +1,9 @@
+[
+  { "channel": "/foo/bar" },
+  {
+    "channel": "/meta/connect",
+    "clientId": "Un1q31d3nt1f13r",
+    "connectionType": "long-polling",
+    "successful": true
+  }
+]

@@ -20,5 +20,11 @@ char*          cometd_msg_client_id     (JsonNode* node);
 GList*         cometd_msg_supported_connection_types(JsonNode* node);
 cometd_advice* cometd_msg_advice        (JsonNode* node);
 void           cometd_msg_set_boolean_member(JsonNode* node, const char* member, gboolean val);
+JsonNode*      cometd_msg_extract_connect(JsonNode* payload);
+
+// message types
+JsonNode* cometd_msg_connect_new(const cometd* h);
+JsonNode* cometd_msg_bad_connect_new(const cometd* h);
+
 
 #endif // COMETD_MSG_H
