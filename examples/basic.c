@@ -23,4 +23,6 @@ int main(void)
   cometd_subscribe(cometd, "/meta/**", meta_handler);
   cometd_connect(cometd);
   cometd_listen(cometd);
+
+  return 0;
 }
