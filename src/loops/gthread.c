@@ -54,9 +54,7 @@ cometd_loop_gthread_run(gpointer data)
     if (cometd_should_retry_recv(h))
       backoff = cometd_get_backoff(h, attempt);
     else
-    {
       backoff = attempt = 0;
-    }
 
     json_node_free(payload);
     json_node_free(connect);

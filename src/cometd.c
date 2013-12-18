@@ -293,8 +293,7 @@ cometd_should_recv(const cometd* h)
 
   cometd_conn* conn = h->conn;
 
-  return (cometd_conn_is_state(conn, COMETD_CONNECTED) ||
-          cometd_conn_is_state(conn, COMETD_HANDSHAKE_SUCCESS));
+  return cometd_conn_is_state(conn, COMETD_CONNECTED | COMETD_HANDSHAKE_SUCCESS);
 }
 
 gboolean
