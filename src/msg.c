@@ -25,7 +25,7 @@ cometd_msg_is_successful(JsonNode* node)
       break;
   }
 
-  if (msg != NULL)
+  if (msg != NULL && json_object_has_member(msg, COMETD_MSG_SUCCESSFUL_FIELD))
     success = json_object_get_boolean_member(msg, COMETD_MSG_SUCCESSFUL_FIELD);
 
   return success;
@@ -123,13 +123,14 @@ cometd_msg_advice(JsonNode* node)
   g_return_val_if_fail(JSON_NODE_HOLDS_OBJECT (node), NULL);
 
   JsonObject* obj = json_node_get_object(node);
-  JsonObject* advice_obj = json_object_get_object_member(obj,
-                                      COMETD_MSG_ADVICE_FIELD);
+  cometd_advice* advice = NULL;
+  JsonObject* advice_obj = NULL;
+
+  if (json_object_has_member(obj, COMETD_MSG_ADVICE_FIELD))
+    advice_obj = json_object_get_object_member(obj, COMETD_MSG_ADVICE_FIELD);
 
   if (!advice_obj)
     return NULL;
-
-  cometd_advice* advice = NULL;
 
   const char* reconnect = json_object_get_string_member(advice_obj,
                                       "reconnect");
@@ -150,6 +151,36 @@ cometd_msg_advice(JsonNode* node)
   }
 
   return advice;
+}
+
+void
+cometd_msg_set_advice(JsonNode* msg, const cometd_advice* advice)
+{
+  g_return_if_fail(JSON_NODE_HOLDS_OBJECT (msg));
+
+  if (!advice) return;
+
+  JsonObject* advice_obj = json_object_new();
+
+  char* reconnect = NULL;
+  switch (advice->reconnect)
+  {
+    case COMETD_RECONNECT_NONE:
+      reconnect = "none";
+      break;
+    case COMETD_RECONNECT_RETRY:
+      reconnect = "retry";
+      break;
+    case COMETD_RECONNECT_HANDSHAKE:
+      reconnect = "handshake";
+      break;
+  } 
+
+  json_object_set_string_member(advice_obj, "reconnect", reconnect);
+  json_object_set_int_member(advice_obj, "interval", advice->interval);
+
+  JsonObject* obj = json_node_get_object(msg);
+  json_object_set_object_member(obj, COMETD_MSG_ADVICE_FIELD, advice_obj);
 }
 
 JsonNode*

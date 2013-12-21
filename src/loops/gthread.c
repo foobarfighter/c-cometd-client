@@ -90,7 +90,8 @@ cometd_loop_gthread_stop(cometd_loop* loop)
 void
 cometd_loop_gthread_wait(cometd_loop* loop, long millis)
 {
-  g_return_if_fail(millis > 0);
+  if (millis < 1) return;
+
   usleep(millis * 1000);
 }
 

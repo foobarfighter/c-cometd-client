@@ -234,6 +234,13 @@ START_TEST (test_cometd_get_backoff)
   cometd_conn_take_advice(conn, handshake_advice);
   ck_assert_int_eq(10, cometd_get_backoff(g_instance, 20));
 
+  // test when advice is retry
+  cometd_advice* retry_advice = cometd_advice_new();
+  retry_advice->reconnect = COMETD_RECONNECT_RETRY;
+  retry_advice->interval = 10;
+  cometd_conn_take_advice(conn, retry_advice);
+  ck_assert_int_eq(10, cometd_get_backoff(g_instance, 20));  
+
   // test when advice is none
   cometd_advice* none_advice = cometd_advice_new();
   handshake_advice->reconnect = COMETD_RECONNECT_NONE;
@@ -317,6 +324,27 @@ START_TEST (test_cometd_process_connect_unsuccessful)
   int code = cometd_process_connect(g_instance, msg);
   fail_unless(cometd_conn_is_state(conn, COMETD_UNCONNECTED));
   ck_assert_int_eq(COMETD_SUCCESS, code);
+}
+END_TEST
+
+START_TEST (test_cometd_process_connect_takes_advice_when_it_exists)
+{
+  cometd_conn* conn = g_instance->conn;
+  cometd_conn_set_client_id(conn, "testid");
+  cometd_conn_set_transport(conn, &TEST_TRANSPORT);
+
+  // set advice
+  JsonNode* msg = cometd_msg_connect_new(g_instance);
+  cometd_advice* advice = cometd_advice_new();
+  cometd_msg_set_advice(msg, advice);
+  cometd_process_connect(g_instance, msg);
+
+  // no advice
+  JsonNode* bad_connect = cometd_msg_bad_connect_new(g_instance);
+  cometd_process_connect(g_instance, bad_connect);
+
+  // assert advice exists
+  fail_unless(cometd_conn_advice(conn)->reconnect == COMETD_RECONNECT_NONE);
 }
 END_TEST
 
@@ -448,6 +476,7 @@ Suite* make_cometd_unit_suite (void)
   tcase_add_test (tc_unit, test_cometd_process_handshake_success);
   tcase_add_test (tc_unit, test_cometd_process_handshake_no_transport);
   tcase_add_test (tc_unit, test_cometd_process_connect_success);
+  tcase_add_test (tc_unit, test_cometd_process_connect_takes_advice_when_it_exists);
   tcase_add_test (tc_unit, test_cometd_handshake_backoff);
   tcase_add_test (tc_unit, test_cometd_process_msg_fires_incoming_ext);
   tcase_add_test (tc_unit, test_cometd_transport_send_fires_outgoing_ext);

@@ -134,6 +134,7 @@ gboolean    cometd_should_recv  (const cometd* h);
 gboolean    cometd_should_retry_recv (const cometd* h);
 long        cometd_get_backoff  (const cometd* h, long attempt);
 int         cometd_connect      (const cometd* h);
+void        cometd_handle_advice(const cometd* h, cometd_advice* advice);
 JsonNode*   cometd_recv         (const cometd* h);
 
 int cometd_publish(const cometd* h,

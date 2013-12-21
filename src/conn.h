@@ -40,4 +40,5 @@ gboolean       cometd_advice_is_none(const cometd_advice* advice);
 gboolean       cometd_advice_is_retry(const cometd_advice* advice);
 void           cometd_conn_take_advice(cometd_conn* conn, cometd_advice* advice);
 
+
 #endif /* COMETD_CONN_H */

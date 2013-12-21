@@ -186,6 +186,8 @@ cometd_listen(const cometd* h)
                     COMETD_UNINITIALIZED;
 
   
+  sleep(100000);
+
   // TODO: Add tests that demostrate that cometd_listen actually returns
   while (!cometd_conn_is_state(h->conn, stop))
   {
@@ -293,7 +295,10 @@ cometd_should_recv(const cometd* h)
 
   cometd_conn* conn = h->conn;
 
-  return cometd_conn_is_state(conn, COMETD_CONNECTED | COMETD_HANDSHAKE_SUCCESS);
+  const int state = COMETD_CONNECTED | COMETD_HANDSHAKE_SUCCESS |
+                    COMETD_UNCONNECTED;
+
+  return cometd_conn_is_state(conn, state);
 }
 
 gboolean
@@ -336,14 +341,14 @@ cometd_handshake(const cometd* h, cometd_callback cb)
 long
 cometd_get_backoff(const cometd* h, long attempt)
 {
-  long backoff;
-
   cometd_config* config = h->config;
   cometd_advice* advice = h->conn->advice;
 
+  long backoff = config->backoff_increment;
+
   if (!advice)
     backoff = cometd_impl_compute_backoff(config, attempt);
-  else if (cometd_advice_is_handshake(advice))
+  else if (cometd_advice_is_handshake(advice) || cometd_advice_is_retry(advice))
     backoff = advice->interval;
   else if (cometd_advice_is_none(advice))
     backoff = -1;
@@ -464,6 +469,7 @@ cometd_process_handshake(const cometd* h, JsonNode* msg)
 int
 cometd_process_connect(const cometd* h, JsonNode* msg)
 {
+  cometd_advice* advice;
   cometd_conn* conn = h->conn;
 
   // If we are trying to disconnect cleanly then we should not
@@ -471,14 +477,29 @@ cometd_process_connect(const cometd* h, JsonNode* msg)
   if (cometd_conn_is_state(conn, COMETD_DISCONNECTING | COMETD_DISCONNECTED))
     return COMETD_SUCCESS;
 
-  if (cometd_msg_is_successful(msg))
-    cometd_conn_set_state(conn, COMETD_CONNECTED);
-  else
+  // Always set advice if it is offered and reuse old advice if new advice DNE
+  advice = cometd_msg_advice(msg);
+  if (advice)
+    cometd_conn_take_advice(conn, advice);
+
+  if (!cometd_msg_is_successful(msg))
   {
     cometd_conn_set_state(conn, COMETD_UNCONNECTED);
+    cometd_handle_advice(h, advice);
   }
+  else
+    cometd_conn_set_state(conn, COMETD_CONNECTED);
 
   return COMETD_SUCCESS;
+}
+
+void
+cometd_handle_advice(const cometd* h, cometd_advice* advice)
+{
+  if (advice == NULL) return;
+
+  if (cometd_advice_is_handshake(advice))
+    cometd_handshake(h, NULL);
 }
 
 gboolean

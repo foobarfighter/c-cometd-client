@@ -19,9 +19,9 @@ cometd_inbox_new(cometd_loop* loop)
 }
 
 void
-cometd_inbox_push(cometd_inbox* inbox, JsonNode* root)
+cometd_inbox_push(cometd_inbox* inbox, JsonNode* payload)
 {
-  JsonArray* arr = json_node_get_array(root);
+  JsonArray* arr = json_node_get_array(payload);
   GList* msgs = json_array_get_elements(arr);
 
   GList* msg;
@@ -33,15 +33,7 @@ void
 cometd_inbox_push_msg(cometd_inbox* inbox, JsonNode* node)
 {
   g_mutex_lock(inbox->m);
-
-  JsonNode* save = json_node_copy(node);
-  JsonObject* msg = json_node_get_object(save);
-
-  const gchar* channel = json_object_get_string_member(msg,
-                                    COMETD_MSG_CHANNEL_FIELD);
-
-  g_queue_push_tail(inbox->queue, save);
-
+  g_queue_push_tail(inbox->queue, json_node_copy(node));
   g_cond_signal(inbox->c);
   g_mutex_unlock(inbox->m);
 }
@@ -67,8 +59,9 @@ cometd_inbox_take(cometd_inbox* inbox)
       if (!g_cond_timed_wait(c, m, &now))
         break;
 
-  if (!g_queue_is_empty(q))
+  if (!g_queue_is_empty(q)) {
     node = (JsonNode*) g_queue_pop_head(q);
+  }
 
   g_mutex_unlock(m);
 
