@@ -17,3 +17,7 @@ Get the dependencies:
 ```
 sudo port install glib2-devel
 sudo port install json-glib
+
+## TODO
+
+- Normalize the plugin system.  loops, exts and transports are all one-offs
