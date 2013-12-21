@@ -9,6 +9,7 @@ static int cometd_impl_process_sync(const cometd* h, JsonNode* array);
 static int cometd_impl_handshake(const cometd* h, cometd_callback cb);
 static long cometd_impl_compute_backoff(const cometd_config* config, long attempt);
 static int cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t);
+static gboolean cometd_impl_should_backoff(const cometd_advice* advice, long attempt);
 
 static gboolean g_types_initialized = FALSE;
 static void cometd_types_init(void)
@@ -343,14 +344,25 @@ cometd_get_backoff(const cometd* h, long attempt)
 
   long backoff = config->backoff_increment;
 
-  if (!advice)
+  if (advice == NULL)
     backoff = cometd_impl_compute_backoff(config, attempt);
+  else if (cometd_impl_should_backoff(advice, attempt))
+    backoff = cometd_impl_compute_backoff(config, attempt-1); // offset attempt
   else if (cometd_advice_is_handshake(advice) || cometd_advice_is_retry(advice))
     backoff = advice->interval;
   else if (cometd_advice_is_none(advice))
     backoff = -1;
 
   return backoff;
+}
+
+gboolean
+cometd_impl_should_backoff(const cometd_advice* advice, long attempt)
+{
+  g_assert(advice != NULL);
+
+  return !cometd_advice_is_none(advice) &&
+         advice->interval == 0 && attempt > 1;
 }
 
 long

@@ -219,7 +219,7 @@ START_TEST (test_cometd_get_backoff)
   cometd_conn* conn = g_instance->conn;
   cometd_config* config = g_instance->config;
 
-  config->backoff_increment = 10;
+  cometd_configure(g_instance, COMETDOPT_BACKOFF_INCREMENT, 10);
 
   // test incremental backoff when no advice
   cometd_conn_take_advice(conn, NULL);
@@ -247,6 +247,15 @@ START_TEST (test_cometd_get_backoff)
   handshake_advice->interval = 10;
   cometd_conn_take_advice(conn, none_advice);
   ck_assert_int_eq(-1, cometd_get_backoff(g_instance, 20));
+
+  // test when interval is 0 and the attempt is > 1, use backoff increment
+  cometd_advice* zero_interval = cometd_advice_new();
+  zero_interval->reconnect = COMETD_RECONNECT_RETRY;
+  zero_interval->interval = 0;
+  cometd_conn_take_advice(conn, zero_interval);
+  ck_assert_int_eq(0, cometd_get_backoff(g_instance, 1));
+  ck_assert_int_eq(10, cometd_get_backoff(g_instance, 2));
+  ck_assert_int_eq(20, cometd_get_backoff(g_instance, 3));
 
   cometd_conn_take_advice(conn, NULL);
 }

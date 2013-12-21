@@ -58,6 +58,10 @@ cometd_loop_gthread_run(gpointer data)
 
     json_node_free(payload);
     json_node_free(connect);
+
+    // bail out if we should no longer backoff
+    if (backoff == -1)
+      break;
   }
 
   // If we've bailed from the loop, it's because we gave up
