@@ -185,9 +185,6 @@ cometd_listen(const cometd* h)
   const long stop = COMETD_DISCONNECTED | COMETD_DISCONNECTING |
                     COMETD_UNINITIALIZED;
 
-  
-  sleep(100000);
-
   // TODO: Add tests that demostrate that cometd_listen actually returns
   while (!cometd_conn_is_state(h->conn, stop))
   {
