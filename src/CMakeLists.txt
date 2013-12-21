@@ -18,7 +18,9 @@ add_library(cometd cometd.c
                    transport.c
                    transport_long_polling.c
                    loop.c
-                   loops/gthread.c)
+                   loops/gthread.c
+                   exts/logger.c
+                   exts/yammer.c)
 
 add_subdirectory(loops)
 
