@@ -27,6 +27,8 @@ cometd_inbox_push(cometd_inbox* inbox, JsonNode* payload)
   GList* msg;
   for (msg = msgs; msg; msg = g_list_next(msg))
     cometd_inbox_push_msg(inbox, msg->data);
+
+  g_list_free(msgs);
 }
 
 void

@@ -98,6 +98,7 @@ cometd_destroy(cometd* h)
   // cometd_loop_destroy(h->loop);
   cometd_inbox_destroy(h->inbox);
   cometd_error_destroy(h->last_error);
+  g_list_free_full(h->exts, cometd_ext_destroy);
 
   // handle
   free(h);
@@ -408,7 +409,7 @@ cometd_impl_handshake(const cometd* h, cometd_callback cb)
 int
 cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t)
 {
-  JsonNode *outgoing = cometd_msg_wrap(msg);
+  JsonNode *outgoing = cometd_msg_wrap_copy(msg);
   JsonNode *payload;
   int code = COMETD_SUCCESS;
 
@@ -418,6 +419,8 @@ cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t)
     payload = http_post_msg(h, outgoing);
   else
     payload = t->send(h, outgoing);
+
+  json_node_free(outgoing);
 
   if (payload == NULL) {
     code = cometd_last_error(h)->code;

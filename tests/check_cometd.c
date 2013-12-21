@@ -243,8 +243,8 @@ START_TEST (test_cometd_get_backoff)
 
   // test when advice is none
   cometd_advice* none_advice = cometd_advice_new();
-  handshake_advice->reconnect = COMETD_RECONNECT_NONE;
-  handshake_advice->interval = 10;
+  none_advice->reconnect = COMETD_RECONNECT_NONE;
+  none_advice->interval = 10;
   cometd_conn_take_advice(conn, none_advice);
   ck_assert_int_eq(-1, cometd_get_backoff(g_instance, 20));
 
@@ -316,6 +316,8 @@ START_TEST (test_cometd_process_connect_success)
   int code = cometd_process_connect(g_instance, msg);
   fail_unless(cometd_conn_is_state(conn, COMETD_CONNECTED));
   ck_assert_int_eq(COMETD_SUCCESS, code);
+
+  json_node_free(msg);
 }
 END_TEST
 
@@ -354,6 +356,10 @@ START_TEST (test_cometd_process_connect_takes_advice_when_it_exists)
 
   // assert advice exists
   fail_unless(cometd_conn_advice(conn)->reconnect == COMETD_RECONNECT_NONE);
+
+  cometd_advice_destroy(advice);
+  json_node_free(msg);
+  json_node_free(bad_connect);
 }
 END_TEST
 
@@ -400,6 +406,9 @@ START_TEST (test_cometd_process_msg_fires_incoming_ext)
   gboolean ret = json_node_equal(expected, node, NULL);
 
   fail_unless(ret);
+
+  json_node_free(node);
+  json_node_free(expected);
 }
 END_TEST
 
@@ -419,6 +428,9 @@ START_TEST (test_cometd_transport_send_fires_outgoing_ext)
   cometd_transport_send(g_instance, node);
   ret = json_node_equal(expected, node, NULL);
   fail_unless(ret);
+
+  json_node_free(node);
+  json_node_free(expected);
 }
 END_TEST
 

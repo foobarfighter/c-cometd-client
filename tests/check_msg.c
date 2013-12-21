@@ -136,6 +136,9 @@ START_TEST (test_cometd_msg_extract_connect)
   fail_unless(json_node_equal(expected_payload, payload, NULL));
 
   json_node_free(payload);
+  json_node_free(connect);
+  json_node_free(expected_payload);
+  json_node_free(expected_connect);
 }
 END_TEST
 
@@ -154,6 +157,7 @@ START_TEST (test_cometd_msg_connect_new)
   fail_unless(strcmp(channel, COMETD_CHANNEL_META_CONNECT) == 0);
 
   json_node_free(msg);
+  cometd_destroy(h);
 }
 END_TEST
 
@@ -170,7 +174,9 @@ START_TEST (test_cometd_msg_bad_connect_new)
 
   const gboolean successful = json_object_get_boolean_member(obj, COMETD_MSG_SUCCESSFUL_FIELD);
   fail_if(successful);
+  
   json_node_free(msg);
+  cometd_destroy(h);
 }
 END_TEST
 

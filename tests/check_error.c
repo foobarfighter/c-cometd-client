@@ -14,6 +14,8 @@ START_TEST (test_cometd_error)
 
   ck_assert_int_eq(code, error->code);
   ck_assert_str_eq(message, error->message);
+
+  cometd_destroy(h);
 }
 END_TEST
 

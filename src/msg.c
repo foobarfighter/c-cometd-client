@@ -228,6 +228,12 @@ cometd_msg_wrap(JsonNode* msg)
 }
 
 JsonNode*
+cometd_msg_wrap_copy(JsonNode* msg)
+{
+  return cometd_msg_wrap(json_node_copy(msg));
+}
+
+JsonNode*
 cometd_msg_connect_new(const cometd* h){
   JsonNode*   root = json_node_new(JSON_NODE_OBJECT);
   JsonObject* obj  = json_object_new();

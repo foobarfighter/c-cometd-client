@@ -23,6 +23,7 @@ void           cometd_msg_set_boolean_member(JsonNode* node, const char* member,
 JsonNode*      cometd_msg_extract_connect(JsonNode* payload);
 void           cometd_msg_set_advice(JsonNode* msg, const cometd_advice* advice);
 JsonNode*      cometd_msg_wrap          (JsonNode* msg);
+JsonNode*      cometd_msg_wrap_copy     (JsonNode* msg);
 
 // message types
 JsonNode* cometd_msg_connect_new(const cometd* h);
