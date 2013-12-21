@@ -10,7 +10,9 @@
 #define DEFAULT_MAX_BACKOFF           30000
 #define DEFAULT_MAX_NETWORK_DELAY     1000
 #define DEFAULT_APPEND_MESSAGE_TYPE   1
-#define DEFAULT_REQUEST_TIMEOUT       30000
+
+// FIXME: this should not timeout before interval advice in meta connect
+#define DEFAULT_REQUEST_TIMEOUT       60000
 
 // Connection state
 #define COMETD_UNINITIALIZED          0x01

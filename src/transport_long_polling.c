@@ -20,7 +20,7 @@ JsonNode*
 cometd_transport_long_polling_recv(const cometd* h)
 {
   JsonNode* ret = NULL;
-  JsonNode* connect_message = cometd_msg_connect_new(h); 
+  JsonNode* connect_message = cometd_msg_wrap(cometd_msg_connect_new(h)); 
   
   if (connect_message == NULL)
     goto failed_connect_message;

@@ -408,15 +408,16 @@ cometd_impl_handshake(const cometd* h, cometd_callback cb)
 int
 cometd_impl_send_msg_sync(const cometd* h, JsonNode* msg, cometd_transport* t)
 {
-  JsonNode* payload;
+  JsonNode *outgoing = cometd_msg_wrap(msg);
+  JsonNode *payload;
   int code = COMETD_SUCCESS;
 
   cometd_ext_fire_outgoing(h->exts, h, msg);
-
+  
   if (t == NULL)
-    payload = http_post_msg(h, msg);
+    payload = http_post_msg(h, outgoing);
   else
-    payload = t->send(h, msg);
+    payload = t->send(h, outgoing);
 
   if (payload == NULL) {
     code = cometd_last_error(h)->code;
