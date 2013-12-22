@@ -76,12 +76,12 @@ static void         fail_loop_wait (cometd_loop* h, long millis) {}
 
 START_TEST (test_cometd_connect_fail_init_loop)
 {
-  cometd_loop fail_loop;
-  fail_loop.start = fail_loop_start;
-  fail_loop.wait  = fail_loop_wait;
+  cometd_loop* fail_loop = cometd_loop_malloc(g_instance);
+  fail_loop->start = fail_loop_start;
+  fail_loop->wait  = fail_loop_wait;
 
   cometd_configure(g_instance, COMETDOPT_URL, TEST_SERVER_URL);
-  cometd_configure(g_instance, COMETDOPT_LOOP, &fail_loop);
+  cometd_configure(g_instance, COMETDOPT_LOOP, fail_loop);
 
   int code = cometd_connect(g_instance);
   fail_unless(cometd_conn_is_state(g_instance->conn, COMETD_HANDSHAKE_SUCCESS));

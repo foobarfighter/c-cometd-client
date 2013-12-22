@@ -95,7 +95,7 @@ cometd_destroy(cometd* h)
  
   cometd_listener_destroy(h->subscriptions);
   cometd_conn_destroy(h->conn);
-  // cometd_loop_destroy(h->loop);
+  cometd_loop_destroy(h->loop);
   cometd_inbox_destroy(h->inbox);
   cometd_error_destroy(h->last_error);
   g_list_free_full(h->exts, cometd_ext_destroy);

@@ -371,14 +371,14 @@ static void increment_backoff_count(cometd_loop* h, long millis)
 
 START_TEST (test_cometd_handshake_backoff)
 {
-  cometd_loop backoff_loop;
-  backoff_loop.wait = increment_backoff_count;
+  cometd_loop* backoff_loop = cometd_loop_malloc(g_instance);
+  backoff_loop->wait = increment_backoff_count;
 
   // bad url so handshake fails
   cometd_configure(g_instance, COMETDOPT_URL, "");
   cometd_configure(g_instance, COMETDOPT_BACKOFF_INCREMENT, 1);
   cometd_configure(g_instance, COMETDOPT_MAX_BACKOFF, 10);
-  cometd_configure(g_instance, COMETDOPT_LOOP, &backoff_loop);
+  cometd_configure(g_instance, COMETDOPT_LOOP, backoff_loop);
 
   int code = cometd_handshake(g_instance, NULL);
 

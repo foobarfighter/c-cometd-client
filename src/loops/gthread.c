@@ -103,5 +103,4 @@ void
 cometd_loop_gthread_destroy(cometd_loop* loop)
 {
   free(loop->internal);
-	free(loop);
 }
