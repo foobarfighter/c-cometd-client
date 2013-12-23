@@ -46,6 +46,7 @@ cometd_listen_thread(gpointer data)
 {
   const cometd* h = (const cometd*)data;
   cometd_listen(h);
+  return NULL;
 }
 
 static
