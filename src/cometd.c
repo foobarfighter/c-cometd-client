@@ -191,7 +191,14 @@ cometd_listen(const cometd* h)
   while (!cometd_conn_is_state(h->conn, stop))
   {
     while (msg = cometd_inbox_take(h->inbox))
-      if (msg != NULL) cometd_process_msg(h, msg);
+      if (msg != NULL)
+      {
+        cometd_process_msg(h, msg);
+
+        // We need are responsible for destroying the message
+        // after it has been taken from the queue and processed.
+        json_node_free(msg);
+      }
   }
 }
 
