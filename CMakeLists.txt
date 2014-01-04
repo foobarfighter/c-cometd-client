@@ -14,3 +14,5 @@ add_subdirectory(deps)
 add_subdirectory(src)
 add_subdirectory(examples)
 add_subdirectory(tests)
+
+install(DIRECTORY include DESTINATION .)
