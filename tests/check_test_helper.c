@@ -1,7 +1,4 @@
-#include <check.h>
 #include "check_cometd.h"
-#include "test_helper.h"
-#include "json.h"
 
 static gboolean
 is_match(char* a, char* b, GList* exclude_props)

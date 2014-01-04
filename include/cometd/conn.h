@@ -1,7 +1,7 @@
 #ifndef COMETD_CONN_H
 #define COMETD_CONN_H
 
-#include "cometd.h"
+#include "../cometd.h"
 
 typedef enum {
   COMETD_RECONNECT_NONE = 0,
@@ -20,7 +20,6 @@ struct _cometd_conn {
   char* client_id;
   cometd_transport*  transport;
   cometd_advice*     advice;
-  
 };
 
 cometd_conn*   cometd_conn_new(void);

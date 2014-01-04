@@ -1,4 +1,4 @@
-#include "msg.h"
+#include "cometd/msg.h"
 #include <string.h>
 
 /**

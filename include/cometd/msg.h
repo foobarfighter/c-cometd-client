@@ -1,7 +1,7 @@
 #ifndef COMETD_MSG_H
 #define COMETD_MSG_H
 
-#include "cometd.h"
+#include "../cometd.h"
 
 #define COMETD_MSG_ID_FIELD           "id"
 #define COMETD_MSG_DATA_FIELD         "data"

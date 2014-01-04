@@ -1,7 +1,5 @@
+#include "cometd/inbox.h"
 #include <stdlib.h>
-#include <glib.h>
-#include <json-glib/json-glib.h>
-#include "cometd.h"
 
 cometd_inbox*
 cometd_inbox_new(cometd_loop* loop)

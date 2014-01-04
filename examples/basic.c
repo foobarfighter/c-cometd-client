@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "cometd.h"
-#include "exts/logger.h"
+#include "cometd/exts/logger.h"
 
 static int handler(const cometd* h, JsonNode* msg)
 {

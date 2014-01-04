@@ -1,7 +1,7 @@
 #ifndef COMETD_EVENT_H
 #define COMETD_EVENT_H
 
-#include "cometd.h"
+#include "../cometd.h"
 
 struct _cometd_subscription {
   char channel[COMETD_MAX_CHANNEL_LEN];

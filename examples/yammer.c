@@ -1,8 +1,9 @@
+#include "cometd.h"
+#include "cometd/exts/logger.h"
+#include "cometd/exts/yammer.h"  
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "cometd.h"
-#include "exts/logger.h"
-#include "exts/yammer.h"
 
 static int handler(const cometd* h, JsonNode* msg)
 {

@@ -1,6 +1,6 @@
+#include "cometd.h"
 #include <stdlib.h>
 #include <unistd.h>
-#include "../cometd.h"
 
 #define INTERNAL(loop) ((loop_internal*)loop->internal)
 

@@ -1,7 +1,5 @@
+#include "cometd/json.h"
 #include <string.h>
-#include <glib.h>
-#include <json-glib/json-glib.h>
-#include "json.h"
 
 gchar*
 cometd_json_node2str(JsonNode* node)

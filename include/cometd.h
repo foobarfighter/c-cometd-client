@@ -44,30 +44,35 @@ struct _cometd_advice;
 struct _cometd_subscription;
 struct _cometd_transport;
 struct _cometd_ext;
-typedef struct _cometd cometd;
-typedef struct _cometd_error_st cometd_error_st;
-typedef struct _cometd_conn cometd_conn;
-typedef struct _cometd_advice cometd_advice;
+struct _cometd_inbox;
+struct _cometd_loop;
+
+typedef struct _cometd              cometd;
+typedef struct _cometd_error_st     cometd_error_st;
+typedef struct _cometd_conn         cometd_conn;
+typedef struct _cometd_advice       cometd_advice;
 typedef struct _cometd_subscription cometd_subscription;
-typedef struct _cometd_transport cometd_transport;
-typedef struct _cometd_ext cometd_ext;
+typedef struct _cometd_transport    cometd_transport;
+typedef struct _cometd_ext          cometd_ext;
+typedef struct _cometd_inbox        cometd_inbox;
+typedef struct _cometd_loop         cometd_loop;
 
 // Transport callback functions
 typedef int       (*cometd_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_send_callback)(const cometd* h, JsonNode* message);
 typedef JsonNode* (*cometd_recv_callback)(const cometd* h);
 
-#include "error.h"
-#include "conn.h"
-#include "transport.h"
-#include "channel.h"
-#include "event.h"
-#include "msg.h"
-#include "json.h"
-#include "loop.h"
-#include "inbox.h"
-#include "http.h"
-#include "ext.h"
+#include "cometd/error.h"
+#include "cometd/conn.h"
+#include "cometd/transport.h"
+#include "cometd/channel.h"
+#include "cometd/event.h"
+#include "cometd/msg.h"
+#include "cometd/json.h"
+#include "cometd/loop.h"
+#include "cometd/inbox.h"
+#include "cometd/http.h"
+#include "cometd/ext.h"
 
 // Configuration options
 typedef enum {

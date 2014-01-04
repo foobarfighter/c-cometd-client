@@ -1,5 +1,5 @@
 #include "cometd.h"
-#include "transport_long_polling.h"
+#include "cometd/transport_long_polling.h"
 #include <stdlib.h>
 
 static void cometd_destroy_subscription(gpointer subscription);

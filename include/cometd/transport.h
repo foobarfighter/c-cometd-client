@@ -1,7 +1,7 @@
 #ifndef COMETD_TRANSPORT_H
 #define COMETD_TRANSPORT_H
 
-#include "cometd.h"
+#include "../cometd.h"
 
 struct _cometd_transport {
   char*                name;

@@ -1,12 +1,8 @@
+#include "cometd/transport_long_polling.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <glib.h>
-#include <json-glib/json-glib.h>
-#include "transport_long_polling.h"
-#include "http.h"
-#include "cometd.h"
-#include "json.h"
 
 static JsonNode* send(const cometd* h, JsonNode* node);
 

@@ -1,7 +1,7 @@
 #ifndef COMETD_TRANSPORT_LONG_POLLING_H
 #define COMETD_TRANSPORT_LONG_POLLING_H
 
-#include "cometd.h"
+#include "../cometd.h"
 
 #define COMETD_TRANSPORT_LONG_POLLING_NAME "long-polling"
 

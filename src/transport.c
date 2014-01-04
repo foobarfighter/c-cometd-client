@@ -1,5 +1,5 @@
 #include <string.h>
-#include "transport.h"
+#include "cometd/transport.h"
 
 cometd_transport*
 cometd_transport_negotiate(GList* registry, JsonNode* n)

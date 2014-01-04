@@ -1,7 +1,7 @@
 #ifndef COMETD_EXT_H
 #define COMETD_EXT_H
 
-#include "cometd.h"
+#include "../cometd.h"
 
 typedef void (*CometdExtFunc)(const cometd* h, JsonNode* node);
 

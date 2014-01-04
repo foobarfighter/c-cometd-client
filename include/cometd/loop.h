@@ -1,9 +1,7 @@
 #ifndef COMETD_LOOP_H
 #define COMETD_LOOP_H
 
-#include "cometd.h"
-
-typedef struct _cometd_loop cometd_loop;
+#include "../cometd.h"
 
 typedef unsigned int (*CometdLoopStartFunc) (cometd_loop* h);
 typedef void (*CometdLoopStopFunc) (cometd_loop* h);

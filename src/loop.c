@@ -1,5 +1,5 @@
+#include "cometd/loop.h"
 #include <stdlib.h>
-#include "cometd.h"
 
 cometd_loop*
 cometd_loop_malloc(cometd* cometd)

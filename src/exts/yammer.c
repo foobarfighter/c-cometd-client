@@ -1,4 +1,4 @@
-#include "yammer.h"
+#include "cometd/exts/yammer.h"
 
 static void yammer_outgoing(const cometd* h, JsonNode* msg);
 

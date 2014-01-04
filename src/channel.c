@@ -1,4 +1,4 @@
-#include "channel.h"
+#include "cometd/channel.h"
 
 gboolean
 cometd_channel_is_wildcard(const char* channel)

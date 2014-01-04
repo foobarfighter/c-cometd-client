@@ -1,4 +1,4 @@
-#include "error.h"
+#include "cometd/error.h"
 #include <stdlib.h>
 
 cometd_error_st*

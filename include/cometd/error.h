@@ -1,7 +1,7 @@
 #ifndef COMETD_ERROR_H
 #define COMETD_ERROR_H
 
-#include "cometd.h"
+#include "../cometd.h"
 
 typedef enum {
   COMETD_SUCCESS = 0,

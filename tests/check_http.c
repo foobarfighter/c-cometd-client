@@ -1,8 +1,4 @@
-#include <check.h>
-#include <string.h>
 #include "check_cometd.h"
-#include "test_helper.h"
-#include "http.h"
 
 void
 http_setup (void)

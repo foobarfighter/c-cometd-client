@@ -1,10 +1,8 @@
+#include "test_helper.h"
 #include <check.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <glib.h>
-#include "json.h"
-#include "../tests/test_helper.h"
 
 static GQueue* log = NULL;
 static GMutex log_mutex;

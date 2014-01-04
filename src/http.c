@@ -1,4 +1,4 @@
-#include "http.h"
+#include "cometd/http.h"
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>

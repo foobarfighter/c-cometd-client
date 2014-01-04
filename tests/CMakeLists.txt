@@ -5,7 +5,7 @@ include_directories (${GLIB2_INCLUDE_DIR}
                      ${ev_INCLUDE_DIRS}
                      ${CHECK_INCLUDE_DIRS})
 
-include_directories(. ../src)
+include_directories(. ../include)
 
 add_executable(check_cometd check_cometd_main.c
                             check_cometd.c
