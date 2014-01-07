@@ -175,6 +175,7 @@ int  cometd_process_msg(const cometd* h, JsonNode* msg);
 gboolean          cometd_is_meta_channel(const char* channel);
 GHashTable*       cometd_conn_subscriptions(const cometd* h);
 void              cometd_listen(const cometd* h);
+GThread*          cometd_listen_async(cometd* h);
 
 #endif /* COMETD_H */
 

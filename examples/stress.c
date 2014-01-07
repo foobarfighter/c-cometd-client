@@ -11,19 +11,6 @@ static int handler(const cometd* h, JsonNode* msg)
   return COMETD_SUCCESS;
 }
 
-static gpointer cometd_listen_thread_run(gpointer data)
-{
-  cometd_listen((cometd*) data);
-}
-
-static GThread* cometd_listen_async(cometd* cometd)
-{
-  GThread* t = g_thread_new("cometd_listen_thread_run",
-                            cometd_listen_thread_run,
-                            cometd);
-  return t;
-}
-
 int main(void)
 {
   cometd* cometd = cometd_new();

@@ -202,6 +202,21 @@ cometd_listen(const cometd* h)
   }
 }
 
+static gpointer
+cometd_listen_thread_run(gpointer data)
+{
+  cometd_listen((cometd*) data);
+}
+
+GThread*
+cometd_listen_async(cometd* cometd)
+{
+  GThread* t = g_thread_new("cometd_listen_thread_run",
+                            cometd_listen_thread_run,
+                            cometd);
+  return t;
+}
+
 int
 cometd_publish(const cometd* h, const char* channel, JsonNode* message)
 {
