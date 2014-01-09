@@ -170,6 +170,8 @@ cometd_disconnect(const cometd* h, int wait_for_server)
     cometd_conn_set_state(h->conn, COMETD_DISCONNECTED);
   } 
   cometd_loop_stop(h->loop);
+  
+  return COMETD_SUCCESS;
 }
 
 /**
@@ -206,6 +208,7 @@ static gpointer
 cometd_listen_thread_run(gpointer data)
 {
   cometd_listen((cometd*) data);
+  return NULL;
 }
 
 GThread*
